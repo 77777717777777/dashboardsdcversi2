@@ -9,26 +9,30 @@ import streamlit as st
 # CONSTANTS & DESIGN TOKENS
 # ==========================================
 DESIGN = {
-    'bg': '#061427',
-    'card': 'rgba(17, 40, 75, 0.4)',
-    'border': 'rgba(0, 212, 255, 0.15)',
-    'accent': '#00D4FF',
-    'success': '#22C55E',
-    'danger': '#EF4444',
-    'warning': '#F59E0B',
-    'purple': '#A855F7',
-    'secondary': '#A6B4C8',
-    'text': '#FFFFFF'
+    'bg':        '#FFFFFF',
+    'card':      '#FFFFFF',
+    'border':    '#D8E4F0',
+    'accent':    '#2E86DE',
+    'success':   '#1A7A4A',
+    'danger':    '#C0392B',
+    'warning':   '#C47B00',
+    'purple':    '#6741D9',
+    'secondary': '#4A6080',
+    'text':      '#0F2A4A'
 }
 
 PLOTLY_LAYOUT = dict(
     paper_bgcolor='rgba(0,0,0,0)',
     plot_bgcolor='rgba(0,0,0,0)',
-    font=dict(family='Inter', color=DESIGN['secondary']),
-    margin=dict(l=40, r=40, t=40, b=40),
-    xaxis=dict(gridcolor='rgba(255,255,255,0.05)', zeroline=False),
-    yaxis=dict(gridcolor='rgba(255,255,255,0.05)', zeroline=False),
-    legend=dict(bgcolor='rgba(13,33,55,0.8)', bordercolor=DESIGN['border'], borderwidth=1),
+    font=dict(family='DM Sans', color='#4A6080', size=11),
+    margin=dict(l=40, r=40, t=30, b=40),
+    xaxis=dict(gridcolor='rgba(15,42,74,0.07)', zeroline=False,
+               linecolor='#D8E4F0', tickfont=dict(color='#4A6080')),
+    yaxis=dict(gridcolor='rgba(15,42,74,0.07)', zeroline=False,
+               linecolor='#D8E4F0', tickfont=dict(color='#4A6080')),
+    legend=dict(bgcolor='rgba(255,255,255,0.9)',
+                bordercolor='#D8E4F0', borderwidth=1,
+                font=dict(color='#0F2A4A')),
 )
 
 DEST_DISPLAY = {
@@ -75,11 +79,11 @@ def get_file_path(filename):
     return None
 
 def load_main_data():
-    """Load Master Data (DATASET_INVESTOR_READY_ULTIMATE atraksi.csv)"""
-    file_path = get_file_path("DATASET_INVESTOR_READY_ULTIMATE atraksi.csv")
+    """Load Master Data (DATASET_INVESTOR_READY_FINAL.csv)"""
+    file_path = get_file_path("DATASET_INVESTOR_READY_FINAL.csv")
     
     if not file_path:
-        st.error("❌ File DATASET_INVESTOR_READY_ULTIMATE atraksi.csv tidak ditemukan di folder data/")
+        st.error("❌ File DATASET_INVESTOR_READY_FINAL.csv tidak ditemukan di folder data/")
         return pd.DataFrame()
 
     try:
@@ -92,8 +96,14 @@ def load_main_data():
             "saingan_radius_1km", "total_demand_area", "foto_per_ulasan",
             "jarak_ke_pusat_km", "jumlah_atraksi_radius_5km", "jarak_ke_atraksi_terdekat_km",
             "koef_jarak_ke_pusat_km", "koef_saingan_radius_1km", "koef_jumlah_atraksi_radius_5km",
-            "opportunity_score", "investor_interest_index", "ecosystem_score",
-            "competition_score", "demand_score", "quality_score", "r2_lokal"
+            "koef_jarak_ke_atraksi_terdekat_km", "koef_foto_per_ulasan",
+            "opportunity_score", "ecosystem_score", "competition_score",
+            "demand_score", "quality_score", "accessibility_score",
+            "jarak_atraksi_score", "kepadatan_atraksi_score",
+            "r2_lokal", "skor_popularitas", "indeks_investasi",
+            "indeks_investasi_clipped", "indeks_investasi_clipped_scaled",
+            "saingan_radius_1km_scaled", "total_demand_area_scaled",
+            "skor_popularitas_scaled", "log_ulasan", "klaster_dbscan"
         ]
         for col in numeric_cols:
             if col in df.columns:
@@ -101,6 +111,34 @@ def load_main_data():
 
         df = df.dropna(subset=["latitude", "longitude"])
         
+        # ── GENERATE investor_interest_index karena tidak ada di dataset baru ──
+        # Formula: composite dari opportunity, demand, ecosystem, dikurangi competition
+        if 'investor_interest_index' not in df.columns:
+            cols_for_iia = []
+            weights = {}
+            if 'opportunity_score' in df.columns:
+                cols_for_iia.append('opportunity_score')
+                weights['opportunity_score'] = 0.40
+            if 'demand_score' in df.columns:
+                cols_for_iia.append('demand_score')
+                weights['demand_score'] = 0.25
+            if 'ecosystem_score' in df.columns:
+                cols_for_iia.append('ecosystem_score')
+                weights['ecosystem_score'] = 0.20
+            if 'competition_score' in df.columns:
+                cols_for_iia.append('competition_score')
+                weights['competition_score'] = -0.15  # negatif = kompetisi tinggi → IIA turun
+
+            if cols_for_iia:
+                iia = sum(
+                    df[col].fillna(0) * w
+                    for col, w in weights.items()
+                )
+                # Clip dan scale ke 0–100
+                df['investor_interest_index'] = iia.clip(0, 100).round(2)
+            else:
+                df['investor_interest_index'] = 0.0
+
         # Alias nama kolom untuk mempermudah chart
         if 'destinasi' in df.columns:
             df['dest_display'] = df['destinasi'].map(DEST_DISPLAY).fillna(df['destinasi'])
@@ -108,11 +146,12 @@ def load_main_data():
         return df.reset_index(drop=True)
     except Exception as e:
         st.error(f"❌ Error memuat data utama: {e}")
+        traceback.print_exc()
         return pd.DataFrame()
 
 def load_branding_data():
-    """Load data NLP (Insight_Tahap3_Branding revisi atraksi.csv)"""
-    file_path = get_file_path("Insight_Tahap3_Branding revisi atraksi.csv")
+    """Load data NLP (Insight_Tahap3_Branding.csv)"""
+    file_path = get_file_path("Insight_Tahap3_Branding.csv")
     if not file_path:
         return pd.DataFrame()
     
@@ -126,6 +165,18 @@ def load_branding_data():
     except Exception:
         return pd.DataFrame()
 
+def load_top3_investment_data():
+    """Load data Top 3 Investasi per Destinasi (Tabel_Top3_Investasi_FINAL.csv)"""
+    file_path = get_file_path("Tabel_Top3_Investasi_FINAL.csv")
+    if not file_path:
+        return pd.DataFrame()
+    try:
+        df = pd.read_csv(file_path, sep=None, engine="python", encoding="utf-8-sig")
+        df.columns = df.columns.str.strip()
+        return df
+    except Exception:
+        return pd.DataFrame()
+    
 # ==========================================
 # FILTER & AGGREGATION
 # ==========================================

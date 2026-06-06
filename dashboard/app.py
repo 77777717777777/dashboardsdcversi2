@@ -24,7 +24,7 @@ st.set_page_config(
 # ── IMPORT MODUL ─────────────────────────────────────────────────────
 from functions.styles import inject_css
 from functions.analytics import (
-    load_main_data, load_branding_data,
+    load_main_data, load_branding_data, load_top3_investment_data,
     get_destination_stats, get_national_kpis, generate_ai_insights,
     get_moran_i_simulation, filter_dataframe,
     DEST_COORDS, DEST_DISPLAY, DESIGN, PLOTLY_LAYOUT
@@ -36,15 +36,16 @@ from functions.charts import (
     plot_gwr_coefficients, plot_branding_bars,
     plot_morans_result, plot_investment_matrix, apply_layout
 )
+from functions.insights import generate_insights, generate_recommendations 
 
 inject_css()
 
 # ── LOAD DATA ────────────────────────────────────────────────────────
 @st.cache_data(ttl=3600)
 def load_all_data():
-    return load_main_data(), load_branding_data()
+    return load_main_data(), load_branding_data(), load_top3_investment_data()
 
-df_raw, branding_df = load_all_data()
+df_raw, branding_df, top3_df = load_all_data()
 dest_stats_raw = get_destination_stats(df_raw)
 
 
@@ -177,12 +178,13 @@ def render_sidebar():
 
         # Navigasi
         nav_pages = {
-            "📊 Executive Overview":       "executive",
-            "🗺️ Spatial Intelligence":     "spatial",
-            "🔍 Destination Deep Dive":    "destination",
-            "🧠 Analytics Engine":         "engine",
-            "💰 Investment Intelligence":  "investment",
-            "🎯 Strategic Recommendations":"strategy",
+            "Ikhtisar Eksekutif":        "executive",
+            "Peta Spasial":              "spatial",
+            "Analisis Destinasi":        "destination",
+            "Mesin Analitik":            "engine",
+            "Intelijen Investasi":       "investment",
+            "Wawasan Pasar":             "insights",
+            "Rekomendasi Strategis":     "strategy",
         }
         st.markdown(
             '<div style="font-size:9px;color:#64748B;letter-spacing:1.2px;'
@@ -268,11 +270,8 @@ dest_stats = get_destination_stats(df) if len(df) > 0 else dest_stats_raw.copy()
 # ════════════════════════════════════════════════════════════════════
 
 def page_executive():
-    page_header(
-        "Executive Overview",
-        "National Tourism Intelligence · Indonesia Super-Priority Destinations",
-        "📊"
-    )
+    page_header("Ikhtisar Eksekutif",
+        "Intelijen Pariwisata Nasional · Destinasi Super Prioritas Indonesia", "")
     kpis = get_national_kpis(df)
 
     # ── KPI Baris 1: 5 kolom seimbang ──────────────────────────────
@@ -427,7 +426,7 @@ def page_spatial():
     from functions.maps import render_main_map
     from streamlit_folium import st_folium
 
-    page_header("Spatial Intelligence", "GIS Intelligence Center · Multi-Layer Accommodation Analysis", "🗺️")
+    page_header("Peta Spasial Akomodasi", "Pusat Intelijen GIS · Analisis Multi-Layer Akomodasi", "")
 
     col_layers, col_map = st.columns([1, 3.2])
 
@@ -523,7 +522,7 @@ def page_spatial():
 # ════════════════════════════════════════════════════════════════════
 
 def page_competition():
-    page_header("Competition Intelligence", "Market Structure · Red Ocean vs Blue Ocean Detection", "⚔️")
+    page_header("Analisis Kompetisi Pasar", "Struktur Pasar · Deteksi Red Ocean vs Blue Ocean", "")
 
     # KPI 4 kolom
     k1, k2, k3, k4 = st.columns(4)
@@ -636,7 +635,7 @@ def page_competition():
 # ════════════════════════════════════════════════════════════════════
 
 def page_ecosystem():
-    page_header("Attraction Ecosystem Intelligence", "Tourism Magnet Analysis · Investment Signal Detection", "🌿")
+    page_header("Ekosistem Atraksi Wisata", "Analisis Magnet Pariwisata · Deteksi Sinyal Investasi", "")
 
     k1, k2, k3, k4 = st.columns(4)
     avg_eco  = df['ecosystem_score'].mean()
@@ -760,7 +759,7 @@ def page_ecosystem():
 # ════════════════════════════════════════════════════════════════════
 
 def page_nlp():
-    page_header("NLP Branding Intelligence", "Hotel Naming Strategy · Nature vs Standard Branding", "💬")
+    page_header("Analisis Branding NLP", "Strategi Penamaan Hotel · Branding Alam vs Standar", "")
 
     all_dest_nlp = ['All'] + sorted(branding_df['destinasi'].dropna().unique().tolist())
     dest_nlp = st.selectbox("🎯 Filter Destinasi", all_dest_nlp, key='nlp_dest')
@@ -865,7 +864,7 @@ def page_nlp():
 # ════════════════════════════════════════════════════════════════════
 
 def page_investment():
-    page_header("Investment Intelligence", "Investment Decision Engine · Opportunity Ranking & Risk Assessment", "💰")
+    page_header("Intelijen Investasi", "Mesin Keputusan Investasi · Peringkat Peluang & Penilaian Risiko", "")
 
     hi_opp  = df[df['opportunity_score'] >= 75] if 'opportunity_score' in df.columns else pd.DataFrame()
     emg     = df[(df['opportunity_score'] >= 55) & (df['opportunity_score'] < 75)] if 'opportunity_score' in df.columns else pd.DataFrame()
@@ -983,7 +982,7 @@ def page_investment():
 # ════════════════════════════════════════════════════════════════════
 
 def page_econometrics():
-    page_header("Spatial Econometric Intelligence", "GWR Analysis · Spatial Autocorrelation · Local Coefficient Maps", "📐")
+    page_header("Ekonometrika Spasial", "Analisis GWR · Autokorelasi Spasial · Peta Koefisien Lokal", "")
 
     moran = get_moran_i_simulation(df)
     section_header("Moran's I Spatial Autocorrelation", "Global Spatial Dependency Test")
@@ -1095,7 +1094,7 @@ def page_destination():
     from functions.maps import render_destination_map
     from streamlit_folium import st_folium
 
-    page_header("Destination Deep Dive", "Per-Destination Analytics · Investment Intelligence by Location", "🔍")
+    page_header("Analisis Mendalam per Destinasi", "Analitik per Destinasi · Intelijen Investasi berdasarkan Lokasi", "")
 
     all_dd = sorted(df_raw['destinasi'].dropna().unique().tolist())
     sel    = st.selectbox("📍 Pilih Destinasi", all_dd, key='dest_dd')
@@ -1271,7 +1270,7 @@ def page_destination():
 # ════════════════════════════════════════════════════════════════════
 
 def page_strategy():
-    page_header("Strategic Recommendation Center", "Executive Intelligence Report · Kemenparekraf Investment Strategy", "🎯")
+    page_header("Pusat Rekomendasi Strategis", "Laporan Intelijen Eksekutif · Strategi Investasi Kemenparekraf", "")
 
     st.markdown(
         '<div style="display:flex;align-items:center;justify-content:space-between;'
@@ -1472,7 +1471,7 @@ def page_strategy():
 # ════════════════════════════════════════════════════════════════════
 
 def page_engine():
-    page_header("Analytics Engine", "Ekonometrika Spasial · NLP · Ekosistem · Kompetisi", "🧠")
+    page_header("Mesin Analitik", "Ekonometrika Spasial · NLP · Ekosistem · Kompetisi", "")
     t1, t2, t3, t4 = st.tabs([
         "⚔️ Competition Intel",
         "🌿 Attraction Ecosystem",
@@ -1484,6 +1483,53 @@ def page_engine():
     with t3: page_nlp()
     with t4: page_econometrics()
 
+# ════════════════════════════════════════════════════════════════════
+# PAGE — MARKET INSIGHTS
+# ════════════════════════════════════════════════════════════════════
+
+def page_insights():
+    page_header("Wawasan Pasar", "Intelijen Berbasis AI · Sinyal & Rekomendasi Berbasis Data", "")
+
+    # ── Insights ────────────────────────────────────────────────────
+    section_header("Market Intelligence Signals", "Auto-Generated dari Data Aktual")
+    insights = generate_insights(df)
+    icons_map = {'success': '✅', 'danger': '⚠️', 'warning': '🔶', 'info': '🔵'}
+    class_map = {'success': 'opportunity', 'danger': 'critical', 'warning': 'warning', 'info': 'info'}
+
+    for ins in insights:
+        t = ins['type']
+        st.markdown(
+            f'<div class="alert-item {class_map.get(t,"info")}">'
+            f'  <div class="alert-icon">{icons_map.get(t,"ℹ️")}</div>'
+            f'  <div class="alert-content">'
+            f'    <h5>{ins["tag"]}</h5>'
+            f'    <p>{ins["text"]}</p>'
+            f'  </div>'
+            f'</div>',
+            unsafe_allow_html=True
+        )
+
+    spacer(20)
+
+    # ── Recommendations ─────────────────────────────────────────────
+    section_header("Strategic Recommendations", "Top 5 Rekomendasi Investasi Berbasis Data")
+    recs = generate_recommendations(df)
+
+    for rec in recs:
+        st.markdown(
+            f'<div class="strategy-card" style="border-left:3px solid #00D4FF;">'
+            f'  <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">'
+            f'    <div style="width:32px;height:32px;border-radius:8px;background:rgba(0,212,255,0.1);'
+            f'display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">{rec["icon"]}</div>'
+            f'    <div>'
+            f'      <div style="font-size:9px;color:#64748B;letter-spacing:1px;">REC #{rec["number"]}</div>'
+            f'      <div style="font-size:13px;font-weight:700;color:#FFF;">{rec["title"]}</div>'
+            f'    </div>'
+            f'  </div>'
+            f'  <div class="insight-body">{rec["text"]}</div>'
+            f'</div>',
+            unsafe_allow_html=True
+        )
 
 # ════════════════════════════════════════════════════════════════════
 # ROUTER
@@ -1495,6 +1541,7 @@ _PAGES = {
     'destination': page_destination,
     'engine':      page_engine,
     'investment':  page_investment,
+    'insights':    page_insights, 
     'strategy':    page_strategy,
 }
 
