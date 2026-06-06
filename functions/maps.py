@@ -72,7 +72,7 @@ def create_popup_html(row):
 # ==========================================
 def render_main_map(df, layer_id='opportunity'):
     center_lat, center_lon = -2.5, 118.0
-    m = folium.Map(location=[center_lat, center_lon], zoom_start=5, tiles='cartodbdark_matter')
+    m = folium.Map(location=[center_lat, center_lon], zoom_start=5, tiles='OpenStreetMap')
     
     if df.empty: return m
     valid_df = df.dropna(subset=['latitude', 'longitude'])
@@ -152,7 +152,7 @@ def render_destination_map(df, selected_dest):
         center_lat = df['latitude'].mean() if not df.empty else -2.5
         center_lon = df['longitude'].mean() if not df.empty else 118.0
         
-    m = folium.Map(location=[center_lat, center_lon], zoom_start=11, tiles='cartodbdark_matter')
+    m = folium.Map(location=[center_lat, center_lon], zoom_start=11, tiles='CartoDB Voyager')
     
     folium.Marker(
         [center_lat, center_lon],

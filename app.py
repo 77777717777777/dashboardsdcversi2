@@ -56,11 +56,17 @@ dest_stats_raw = get_destination_stats(df_raw)
 # ════════════════════════════════════════════════════════════════════
 
 def kpi_card(label, value, sub='', color='accent', trend=None, trend_dir='up', icon='📊'):
-    val_cls = color if color in ('success','warning','danger','purple','white') else 'accent'
+    card_cls = color if color in ('success','warning','danger','purple','white') else 'accent'
+    trend_html = ''
+    if trend:
+        cls   = 'up' if trend_dir == 'up' else 'down' if trend_dir == 'down' else 'neutral'
+        arrow = '↑' if trend_dir == 'up' else '↓' if trend_dir == 'down' else '—'
+        trend_html = f'<div class="kpi-trend {cls}">{arrow} {trend}</div>'
     return (
-        f'<div class="kpi-card">'
-        f'  <div class="kpi-label">{icon}&nbsp;{label}</div>'
-        f'  <div class="kpi-value {val_cls}">{value}</div>'
+        f'<div class="kpi-card {card_cls}">'
+        f'  {trend_html}'
+        f'  <div class="kpi-label">{label}</div>'
+        f'  <div class="kpi-value">{value}</div>'
         f'  <div class="kpi-sub">{sub}</div>'
         f'</div>'
     )
@@ -358,19 +364,21 @@ def page_executive():
                 unsafe_allow_html=True
             )
         # Ocean status summary
+        # Ocean status summary
+# Ocean status summary
         red, blue = kpis['red_ocean_count'], kpis['blue_ocean_count']
         if red + blue > 0:
             st.markdown(
-                f'<div style="margin-top:10px;background:rgba(13,33,55,0.7);'
-                f'border:1px solid rgba(0,212,255,0.1);border-radius:10px;padding:12px;">'
-                f'  <div style="font-size:9px;color:#64748B;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Ocean Status</div>'
+                f'<div style="margin-top:10px;background:#FFFFFF;'
+                f'border:1px solid #D8E4F0;border-radius:10px;padding:12px;box-shadow:0 1px 4px rgba(15,42,74,0.08);">'
+                f'  <div style="font-size:10px;color:#4A6080;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;font-weight:700;">Ocean Status</div>'
                 f'  <div style="display:flex;gap:8px;">'
-                f'    <div style="flex:1;text-align:center;background:rgba(239,68,68,0.08);border-radius:8px;padding:8px;">'
-                f'      <div style="font-size:20px;font-weight:800;color:#EF4444;">{red}</div>'
-                f'      <div style="font-size:10px;color:#64748B;">Red Ocean</div></div>'
-                f'    <div style="flex:1;text-align:center;background:rgba(0,212,255,0.08);border-radius:8px;padding:8px;">'
-                f'      <div style="font-size:20px;font-weight:800;color:#00D4FF;">{blue}</div>'
-                f'      <div style="font-size:10px;color:#64748B;">Blue Ocean</div></div>'
+                f'    <div style="flex:1;text-align:center;background:rgba(192,57,43,0.05);border:1px solid rgba(192,57,43,0.15);border-radius:8px;padding:8px;">'
+                f'      <div style="font-size:22px;font-weight:800;color:#C0392B;">{red}</div>'
+                f'      <div style="font-size:11px;color:#4A6080;font-weight:500;">Red Ocean</div></div>'
+                f'    <div style="flex:1;text-align:center;background:rgba(45,134,222,0.05);border:1px solid rgba(45,134,222,0.15);border-radius:8px;padding:8px;">'
+                f'      <div style="font-size:22px;font-weight:800;color:#2E86DE;">{blue}</div>'
+                f'      <div style="font-size:11px;color:#4A6080;font-weight:500;">Blue Ocean</div></div>'
                 f'  </div>'
                 f'</div>',
                 unsafe_allow_html=True
@@ -383,28 +391,28 @@ def page_executive():
 
     with ca:
         section_header("Peringkat Peluang Investasi", "Berdasarkan Skor Peluang")
-        st.markdown('<div class="viz-card">', unsafe_allow_html=True)
+        #st.markdown('<div class="viz-card">', unsafe_allow_html=True)
         fig = plot_opportunity_ranking(dest_stats, 'avg_opportunity', '', height=320)
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        st.markdown('</div>', unsafe_allow_html=True)
+        #st.markdown('</div>', unsafe_allow_html=True)
 
     with cb:
         section_header("Persaingan vs Permintaan", "Matriks Kuadran Strategis")
-        st.markdown('<div class="viz-card">', unsafe_allow_html=True)
+        #st.markdown('<div class="viz-card">', unsafe_allow_html=True)
         fig = plot_competition_demand_quadrant(dest_stats, height=320)
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        st.markdown('</div>', unsafe_allow_html=True)
+        #st.markdown('</div>', unsafe_allow_html=True)
 
     with cc:
         section_header("Komposisi Segmen Pasar", "Berdasarkan Jumlah Hotel")
-        st.markdown('<div class="viz-card">', unsafe_allow_html=True)
+        #st.markdown('<div class="viz-card">', unsafe_allow_html=True)
         if 'market_segment' in df.columns:
             seg_c = df['market_segment'].value_counts()
             fig = plot_donut(seg_c.index.tolist(), seg_c.values.tolist(),
                          colors=['#A855F7','#00D4FF','#3B82F6','#F59E0B','#22C55E','#EF4444','#F97316'],
                          height=320)
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        st.markdown('</div>', unsafe_allow_html=True)
+        #st.markdown('</div>', unsafe_allow_html=True)
 
     spacer(20)
 
@@ -413,12 +421,12 @@ def page_executive():
 
     with cd:
         section_header("Radar Multi-Indikator Destinasi", "Perbandingan Antar Destinasi")
-        st.markdown('<div class="viz-card">', unsafe_allow_html=True)
+        #st.markdown('<div class="viz-card">', unsafe_allow_html=True)
         metrics = [m for m in ['avg_opportunity','avg_competition','avg_ecosystem','avg_demand','avg_iia'] if m in dest_stats.columns]
         if len(metrics) >= 3:
             fig = plot_multi_radar(dest_stats, metrics)
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        st.markdown('</div>', unsafe_allow_html=True)
+        #st.markdown('</div>', unsafe_allow_html=True)
 
     with ce:
         section_header("Temuan Strategis", "Analisis Otomatis Berbasis Data")
@@ -444,7 +452,7 @@ def page_spatial():
     col_layers, col_map = st.columns([1, 3.2])
 
     with col_layers:
-        st.markdown('<div style="font-size:9px;color:#475569;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:10px;font-weight:600;">MAP LAYERS</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:14px;color:#475569;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:8px;font-weight:600;">MAP LAYERS</div>', unsafe_allow_html=True)
         layer_opts = {
             "Peluang Investasi": "opportunity",
             "Heatmap Permintaan":        "supply",
@@ -475,16 +483,26 @@ def page_spatial():
                 unsafe_allow_html=True
             )
 
-        # Legenda
+        
+    with col_map:
+        # Label layer aktif
         st.markdown(
-            '<div style="margin-top:12px;padding:10px;background:#F8FAFC;'
-            'border:1px solid #E2E8F0;border-radius:8px;">'
-            '<div style="font-size:9px;color:#475569;letter-spacing:0.8px;'
-            'text-transform:uppercase;margin-bottom:7px;font-weight:600;">KETERANGAN</div>'
+            f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'
+            f'  <div style="width:8px;height:8px;border-radius:50%;background:#2563EB;"></div>'
+            f'  <span style="font-size:12px;font-weight:600;color:#1E293B;">Layer Aktif: {sel_layer}</span>'
+            f'</div>',
+            unsafe_allow_html=True
+        )
+
+        # ── LEGEND HORIZONTAL 
+        st.markdown(
+            '<div style="display:flex;gap:16px;align-items:center;'
+            'padding:8px 14px;background:#F8FAFC;'
+            'border:1px solid #E2E8F0;border-radius:8px;margin-bottom:8px;">'
             + ''.join([
-                f'<div style="display:flex;align-items:center;gap:7px;margin-bottom:5px;">'
+                f'<div style="display:flex;align-items:center;gap:6px;">'
                 f'  <div style="width:9px;height:9px;border-radius:50%;background:{c};flex-shrink:0;"></div>'
-                f'  <span style="font-size:10px;color:#334155;">{lbl}</span>'
+                f'  <span style="font-size:11px;color:#334155;font-weight:500;">{lbl}</span>'
                 f'</div>'
                 for c, lbl in [
                     ('#16A34A', 'Peluang Tinggi'),
@@ -497,17 +515,7 @@ def page_spatial():
             unsafe_allow_html=True
         )
 
-    with col_map:
-        # Label layer aktif
-        st.markdown(
-            f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">'
-            f'  <div style="width:8px;height:8px;border-radius:50%;background:#2563EB;"></div>'
-            f'  <span style="font-size:12px;font-weight:600;color:#1E293B;">Layer Aktif: {sel_layer}</span>'
-            f'</div>',
-            unsafe_allow_html=True
-        )
-
-        # Border card untuk peta
+        # Peta
         st.markdown(
             '<div style="border:1px solid #CBD5E1;border-radius:12px;overflow:hidden;">',
             unsafe_allow_html=True
@@ -515,24 +523,23 @@ def page_spatial():
         with st.spinner("Memuat layer peta..."):
             sample = df.sample(min(800, len(df)), random_state=42) if len(df) > 800 else df
             m = render_main_map(sample, layer_id)
-            st_folium(m, height=500, use_container_width=True, returned_objects=[])
+            st_folium(m, height=460, use_container_width=True, returned_objects=[])
         st.markdown('</div>', unsafe_allow_html=True)
 
-        st.markdown('<div style="height:10px;"></div>', unsafe_allow_html=True)
-
-        # Statistik ringkas — 4 kolom
+        # ── STATS
         s1, s2, s3, s4 = st.columns(4)
         stats_items = [
-            (s1, "Total Hotel Terpetakan", f"{len(df):,}",                                                   "#2563EB"),
-            (s2, "Peluang Tinggi",         f"{int((df['opportunity_score'] >= 75).sum()):,}",                 "#16A34A"),
-            (s3, "Zona Pasar Jenuh",       f"{int(df['status_ocean'].str.contains('Red', na=False).sum()):,}","#DC2626"),
-            (s4, "Rata-rata Ekosistem",    f"{df['ecosystem_score'].mean():.1f}",                             "#7C3AED"),
+            (s1, "Total Hotel Terpetakan", f"{len(df):,}", "#2563EB"),
+            (s2, "Peluang Tinggi", f"{int((df['opportunity_score'] >= 75).sum()):,}", "#16A34A"),
+            (s3, "Zona Pasar Jenuh", f"{int(df['status_ocean'].str.contains('Red', na=False).sum()):,}", "#DC2626"),
+            (s4, "Rata-rata Ekosistem", f"{df['ecosystem_score'].mean():.1f}", "#7C3AED"),
         ]
         for col, lbl, val, clr in stats_items:
             with col:
                 st.markdown(
-                    f'<div style="background:#F8FAFC;border:1px solid #E2E8F0;'
-                    f'border-radius:8px;padding:12px;text-align:center;">'
+                    f'<div style="background:#FFFFFF;border:1px solid #E2E8F0;'
+                    f'border-top:3px solid {clr};'
+                    f'border-radius:8px;padding:12px;text-align:center;margin-top:8px;">'
                     f'  <div style="font-size:10px;color:#64748B;margin-bottom:4px;font-weight:500;">{lbl}</div>'
                     f'  <div style="font-size:20px;font-weight:800;color:{clr};">{val}</div>'
                     f'</div>',
@@ -577,20 +584,20 @@ def page_competition():
 
     with c1:
         section_header("Peringkat Persaingan", "Per Destinasi")
-        st.markdown('<div class="viz-card">', unsafe_allow_html=True)
+        #st.markdown('<div class="viz-card">', unsafe_allow_html=True)
         fig = plot_competition_ranking(dest_stats)
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        st.markdown('</div>', unsafe_allow_html=True)
+        #st.markdown('</div>', unsafe_allow_html=True)
 
     with c2:
         section_header("Distribusi Red vs Blue Ocean", "Komposisi Status Pasar Nasional")
-        st.markdown('<div class="viz-card">', unsafe_allow_html=True)
+        #st.markdown('<div class="viz-card">', unsafe_allow_html=True)
         ocean_c  = df['status_ocean'].value_counts()
         lbls     = [l.split('(')[0].strip() for l in ocean_c.index]
         cols_oc  = ['#C0392B' if 'Red' in l else '#2E86DE' for l in ocean_c.index]
         fig = plot_donut(lbls, ocean_c.values.tolist(), colors=cols_oc)
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        st.markdown('</div>', unsafe_allow_html=True)
+        #st.markdown('</div>', unsafe_allow_html=True)
 
     spacer(14)
 
@@ -599,18 +606,18 @@ def page_competition():
 
     with c3:
         section_header("Matriks Risiko vs Peluang", "Persaingan vs Peluang Investasi")
-        st.markdown('<div class="viz-card">', unsafe_allow_html=True)
+        #st.markdown('<div class="viz-card">', unsafe_allow_html=True)
         fig = plot_investment_matrix_enhanced(dest_stats)
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        st.markdown('</div>', unsafe_allow_html=True)
+        #st.markdown('</div>', unsafe_allow_html=True)
 
     with c4:
         section_header("Efek Aglomerasi (GWR)", "Koefisien Kompetitor per Destinasi")
-        st.markdown('<div class="viz-card">', unsafe_allow_html=True)
+        #st.markdown('<div class="viz-card">', unsafe_allow_html=True)
         if 'koef_saingan_radius_1km' in df.columns:
             fig = plot_gwr_bar(df)
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        st.markdown('</div>', unsafe_allow_html=True)
+        #st.markdown('</div>', unsafe_allow_html=True)
 
     spacer(14)
 
@@ -690,7 +697,7 @@ def page_ecosystem():
     c1, c2 = st.columns(2)
     with c1:
         section_header("Kepadatan Atraksi per Destinasi", "Rata-rata Atraksi dalam 5km")
-        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+        #st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
         if 'jumlah_atraksi_radius_5km' in df.columns:
             atk_d = df.groupby('dest_display')['jumlah_atraksi_radius_5km'].mean().reset_index().sort_values('jumlah_atraksi_radius_5km', ascending=True)
             fig = go.Figure(go.Bar(
@@ -703,14 +710,14 @@ def page_ecosystem():
             fig = apply_layout(fig, height=280)
             fig.update_xaxes(title='Avg Attractions in 5km')
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        st.markdown('</div>', unsafe_allow_html=True)
+        #st.markdown('</div>', unsafe_allow_html=True)
 
     with c2:
         section_header("Peringkat Skor Ekosistem", "Kesehatan Ekosistem Destinasi")
-        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+        #st.markdown('<div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px;padding:16px 14px 8px;box-shadow:0 1px 4px rgba(15,42,74,0.08);">', unsafe_allow_html=True)
         fig = plot_opportunity_ranking(dest_stats, 'avg_ecosystem', '')
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        st.markdown('</div>', unsafe_allow_html=True)
+        #st.markdown('</div>', unsafe_allow_html=True)
 
     spacer(14)
 
@@ -718,7 +725,7 @@ def page_ecosystem():
     c3, c4 = st.columns(2)
     with c3:
         section_header("Pengaruh Jarak Atraksi terhadap Permintaan", "Jarak Atraksi vs Demand Score")
-        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+        #st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
         if 'jarak_ke_atraksi_terdekat_km' in df.columns:
             smp = df.sample(min(300, len(df)), random_state=42)
             fig = go.Figure(go.Scatter(
@@ -741,11 +748,11 @@ def page_ecosystem():
                 fig.add_trace(go.Scatter(x=xs, y=np.polyval(coef, xs), mode='lines',
                               line=dict(color='#00D4FF', width=2, dash='dot'), showlegend=False))
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        st.markdown('</div>', unsafe_allow_html=True)
+        #st.markdown('</div>', unsafe_allow_html=True)
 
     with c4:
         section_header("Kesenjangan Cakupan Atraksi", "Supply vs Kepadatan Atraksi")
-        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+        #st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
         if 'jumlah_atraksi_radius_5km' in df.columns:
             cov = dest_stats.copy()
             med_atk = df.groupby('dest_display')['jumlah_atraksi_radius_5km'].mean()
@@ -774,7 +781,7 @@ def page_ecosystem():
             fig.update_xaxes(title='Avg Attractions in 5km')
             fig.update_yaxes(title='Number of Hotels')
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        st.markdown('</div>', unsafe_allow_html=True)
+        #st.markdown('</div>', unsafe_allow_html=True)
 
     spacer(14)
     st.markdown(insight_html(
@@ -819,24 +826,24 @@ def page_nlp():
     c1, c2 = st.columns(2)
     with c1:
         section_header("Nature vs Standard Branding", "Avg Reviews per Segmen & Tema Nama")
-        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+        #st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
         fig = plot_branding_bars(branding_df, dest_nlp if dest_nlp != 'All' else None)
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        st.markdown('</div>', unsafe_allow_html=True)
+        #st.markdown('</div>', unsafe_allow_html=True)
 
     with c2:
         section_header("Jumlah Akomodasi per Tema", "Distribusi Lintas Segmen")
-        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+        #st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
         cnt = bf.groupby('Tema_Nama')['Jumlah_Akomodasi'].sum()
         lbs = ['Nature Branding' if 'Alam' in l else 'Standard Naming' for l in cnt.index]
         fig = plot_donut(lbs, cnt.values.tolist(), colors=['#22C55E','#3B82F6'])
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        st.markdown('</div>', unsafe_allow_html=True)
+        #st.markdown('</div>', unsafe_allow_html=True)
 
     spacer(14)
 
     section_header("Branding Heatmap Matrix", "Destinasi × Tema × Avg Reviews")
-    st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+    #st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
     try:
         pv_d  = branding_df.groupby(['destinasi','Tema_Nama'])['Rata_rata_Ulasan'].mean().reset_index()
         pivot = pv_d.pivot(index='destinasi', columns='Tema_Nama', values='Rata_rata_Ulasan').fillna(0)
@@ -856,13 +863,13 @@ def page_nlp():
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
     except Exception:
         st.info("Gunakan filter 'All' untuk melihat heatmap lintas destinasi.")
-    st.markdown('</div>', unsafe_allow_html=True)
+    #st.markdown('</div>', unsafe_allow_html=True)
 
     spacer(14)
     c3, c4 = st.columns(2)
     with c3:
         section_header("Segment Performance", "Premium vs Budget Branding Impact")
-        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+        #st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
         sd = bf.groupby('Segmen').agg(avg_reviews=('Rata_rata_Ulasan','mean')).reset_index()
         fig = go.Figure(go.Bar(
             x=sd['Segmen'].apply(lambda x: x.split('(')[0].strip()), y=sd['avg_reviews'],
@@ -874,7 +881,7 @@ def page_nlp():
         fig.update_xaxes(tickangle=-15)
         fig.update_yaxes(title='Avg Reviews')
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        st.markdown('</div>', unsafe_allow_html=True)
+        #st.markdown('</div>', unsafe_allow_html=True)
 
     with c4:
         section_header("Executive Business Insight", "AI-Generated Branding Intelligence")
@@ -918,77 +925,146 @@ def page_investment():
     c1, c2 = st.columns(2)
     with c1:
         section_header("Opportunity Ranking by Destination", "By Investor Interest Index")
-        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+        #st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
         fig = plot_opportunity_ranking(dest_stats, 'avg_iia', '')
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        st.markdown('</div>', unsafe_allow_html=True)
+        #st.markdown('</div>', unsafe_allow_html=True)
 
     with c2:
         section_header("Opportunity Quadrant Matrix", "Investment Strategy Positioning")
-        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+        #st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
         fig = plot_investment_matrix(dest_stats)
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        st.markdown('</div>', unsafe_allow_html=True)
+        #st.markdown('</div>', unsafe_allow_html=True)
 
     spacer(14)
 
     section_header("Investment Opportunity Ranking", "Top Hotels · Opportunity + IIA Score")
-    t_all, t_hi, t_emg, t_sat = st.tabs(["All","High Priority","Emerging","Saturated"])
+    t_hi, t_emg, t_sat = st.tabs(["High Priority","Emerging","Saturated"])
 
-    for tab, tdf, _ in [(t_all,df,'all'),(t_hi,hi_opp,'hi'),(t_emg,emg,'emg'),(t_sat,sat,'sat')]:
+    for tab, tdf in [(t_hi,hi_opp),(t_emg,emg),(t_sat,sat)]:
         with tab:
             if tdf is None or len(tdf) == 0:
                 st.info("Tidak ada data untuk kategori ini.")
                 continue
-            show = tdf.nlargest(min(10, len(tdf)), 'opportunity_score')
+            show = tdf.nlargest(min(5, len(tdf)), 'opportunity_score')
             for _, row in show.iterrows():
                 rec = str(row.get('rekomendasi_investasi', ''))
-                bc  = 'badge-high' if 'Highly' in rec else 'badge-medium' if rec=='Recommended' else 'badge-low' if 'Further' in rec else 'badge-avoid'
+
+                if 'Sangat' in rec or 'Highly' in rec:
+                    badge_bg, badge_color, badge_text = 'rgba(26,122,74,0.1)', '#1A7A4A', 'Sangat Direkomendasikan'
+                    badge_border = 'rgba(26,122,74,0.25)'
+                elif 'Direkomendasikan' in rec or rec == 'Recommended':
+                    badge_bg, badge_color, badge_text = 'rgba(29,95,173,0.1)', '#1D5FAD', 'Direkomendasikan'
+                    badge_border = 'rgba(29,95,173,0.25)'
+                elif 'Perlu' in rec or 'Kajian' in rec or 'Further' in rec:
+                    badge_bg, badge_color, badge_text = 'rgba(196,123,0,0.1)', '#B8680A', 'Perlu Kajian Lebih'
+                    badge_border = 'rgba(196,123,0,0.25)'
+                else:
+                    badge_bg, badge_color, badge_text = 'rgba(192,57,43,0.1)', '#C0392B', 'Tidak Direkomendasikan'
+                    badge_border = 'rgba(192,57,43,0.25)'
+
+                foto_url = str(row.get('foto_url', '')) if 'foto_url' in row else ''
+                if foto_url and foto_url != 'nan' and foto_url.startswith('http'):
+                    img_html = (
+                        f'<img src="{foto_url}" '
+                        f'style="width:52px;height:52px;border-radius:8px;object-fit:cover;'
+                        f'flex-shrink:0;border:1px solid #E2E8F0;" '
+                        f'onerror="this.style.display=\'none\';this.nextSibling.style.display=\'flex\';">'
+                        f'<div style="display:none;width:52px;height:52px;border-radius:8px;'
+                        f'background:#EFF6FF;align-items:center;justify-content:center;'
+                        f'font-size:22px;flex-shrink:0;">🏨</div>'
+                    )
+                else:
+                    img_html = (
+                        f'<div style="width:52px;height:52px;border-radius:8px;'
+                        f'background:#EFF6FF;display:flex;align-items:center;'
+                        f'justify-content:center;font-size:22px;flex-shrink:0;'
+                        f'border:1px solid #DBEAFE;">🏨</div>'
+                    )
+
                 st.markdown(
-                    f'<div class="hotel-item">'
-                    f'  <div style="width:42px;height:42px;border-radius:8px;background:rgba(0,212,255,0.08);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🏨</div>'
-                    f'  <div class="hotel-info">'
-                    f'    <div class="hotel-name">{row.get("nama_hotel","Hotel")}</div>'
-                    f'    <div class="hotel-meta">📍 {row.get("destinasi","")} · {row.get("jenis","")} · ⭐{row.get("rating",0):.1f} · {int(row.get("jumlah_ulasan",0)):,} reviews</div>'
-                    f'  </div>'
-                    f'  <div style="text-align:center;padding:0 10px;flex-shrink:0;">'
-                    f'    <div style="font-size:9px;color:#64748B;">Opp</div>'
-                    f'    <div style="font-size:17px;font-weight:800;color:#22C55E;">{row.get("opportunity_score",0):.0f}</div>'
-                    f'  </div>'
-                    f'  <div style="text-align:center;padding:0 8px;flex-shrink:0;">'
-                    f'    <div style="font-size:9px;color:#64748B;">IIA</div>'
-                    f'    <div style="font-size:17px;font-weight:800;color:#00D4FF;">{row.get("investor_interest_index",0):.0f}</div>'
-                    f'  </div>'
-                    f'  <span class="badge {bc}" style="flex-shrink:0;">{rec[:12]}</span>'
+                    f'<div style="display:flex;align-items:center;gap:14px;'
+                    f'padding:14px 16px;background:#FFFFFF;'
+                    f'border:1px solid #E2E8F0;border-radius:10px;margin-bottom:8px;'
+                    f'box-shadow:0 1px 4px rgba(15,42,74,0.08);">'
+
+                    f'<div style="display:flex;flex-shrink:0;">{img_html}</div>'
+
+                    f'<div style="flex:1;min-width:0;">'
+                    f'  <div style="font-size:13px;font-weight:700;color:#0F2A4A;margin-bottom:3px;'
+                    f'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
+                    f'{row.get("nama_hotel","Hotel")}</div>'
+                    f'  <div style="font-size:11px;color:#64748B;">'
+                    f'📍 {row.get("destinasi","")} · {row.get("jenis","")} · '
+                    f'⭐{row.get("rating",0):.1f} · {int(row.get("jumlah_ulasan",0)):,} ulasan</div>'
+                    f'</div>'
+
+                    f'<div style="text-align:center;padding:0 12px;flex-shrink:0;">'
+                    f'  <div style="font-size:9px;color:#94A3B8;margin-bottom:2px;">OPP</div>'
+                    f'  <div style="font-size:20px;font-weight:800;color:#1A7A4A;">'
+                    f'{row.get("opportunity_score",0):.0f}</div>'
+                    f'</div>'
+                    f'<div style="text-align:center;padding:0 8px;flex-shrink:0;">'
+                    f'  <div style="font-size:9px;color:#94A3B8;margin-bottom:2px;">IIA</div>'
+                    f'  <div style="font-size:20px;font-weight:800;color:#1D5FAD;">'
+                    f'{row.get("investor_interest_index",0):.0f}</div>'
+                    f'</div>'
+
+                    f'<div style="flex-shrink:0;min-width:170px;text-align:center;">'
+                    f'  <span style="display:inline-block;width:100%;text-align:center;'
+                    f'background:{badge_bg};color:{badge_color};'
+                    f'border:1px solid {badge_border};border-radius:20px;'
+                    f'padding:6px 14px;font-size:10px;font-weight:700;'
+                    f'white-space:nowrap;">{badge_text}</span>'
+                    f'</div>'
+
                     f'</div>',
                     unsafe_allow_html=True
                 )
-
     spacer(14)
     c3, c4 = st.columns(2)
     with c3:
         section_header("Undersupply Zones", "High Demand · Low Supply")
-        for _, row in dest_stats[dest_stats['supply_status'].isin(['Undersupply','Emerging'])].iterrows():
+        under_dest = dest_stats[dest_stats['supply_status'].isin(['Undersupply','Emerging'])]
+        for _, row in under_dest.head(5).iterrows():
+            dest_name = row.get('destinasi', row.get('dest_display', ''))
+            best = df[df['destinasi'] == dest_name].nlargest(1, 'opportunity_score')
+            hotel_name = best.iloc[0]['nama_hotel'] if not best.empty else '-'
             st.markdown(
                 f'<div class="alert-item opportunity">'
                 f'  <div class="alert-icon">📈</div>'
                 f'  <div class="alert-content">'
-                f'    <h5>{row["dest_display"]} — UNDERSUPPLY</h5>'
-                f'    <p>Supply: <strong style="color:#EF4444">{row.get("n_hotels",0)} hotels</strong> · '
-                f'Demand: <strong style="color:#22C55E">{row.get("avg_demand",0):.0f}%</strong></p>'
+                f'    <h5>{row.get("dest_display", dest_name)} — UNDERSUPPLY</h5>'
+                f'    <p>🏆 <strong>{hotel_name[:35]}</strong><br>'
+                f'Supply: <strong style="color:#C0392B">{row.get("n_hotels",0):.0f} hotel</strong> · '
+                f'Demand: <strong style="color:#1A7A4A">{row.get("avg_demand",0):.0f}%</strong></p>'
                 f'  </div>'
                 f'</div>',
                 unsafe_allow_html=True
             )
+
     with c4:
         section_header("Oversaturated Zones", "Caution — High Competition Risk")
-        for _, row in dest_stats[dest_stats['supply_status'] == 'Oversupply'].iterrows():
+        over_dest = dest_stats[dest_stats['supply_status'] == 'Oversupply']
+        
+        if over_dest.empty:
+            over_dest = dest_stats.nlargest(5, 'avg_competition')
+            
+        for _, row in over_dest.head(5).iterrows():
+            # GANTI row['destinasi'] → row['dest_display'] atau pakai .get()
+            dest_name = row.get('destinasi', row.get('dest_display', ''))
+            best = df[df['destinasi'] == dest_name].nlargest(1, 'competition_score')
+            hotel_name = best.iloc[0]['nama_hotel'] if not best.empty else '-'
+            
             st.markdown(
                 f'<div class="alert-item critical">'
                 f'  <div class="alert-icon">⚠️</div>'
                 f'  <div class="alert-content">'
-                f'    <h5>{row["dest_display"]} — SATURATED</h5>'
-                f'    <p>Competition: <strong style="color:#EF4444">{row.get("avg_competition",0):.0f}%</strong> · Hindari entry mid-range</p>'
+                f'    <h5>{row.get("dest_display", dest_name)} — SATURATED</h5>'
+                f'    <p>🏨 <strong>{hotel_name[:35]}</strong><br>'
+                f'Kompetisi: <strong style="color:#C0392B">'
+                f'{row.get("avg_competition",0):.0f}%</strong> · Hindari entry mid-range</p>'
                 f'  </div>'
                 f'</div>',
                 unsafe_allow_html=True
@@ -1023,7 +1099,7 @@ def page_econometrics():
     m_cols = st.columns(len(moran))
     for col, (var, res) in zip(m_cols, moran.items()):
         with col:
-            st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:10px 8px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+            #st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:10px 8px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
             fig = plot_morans_result(res['I'], res['z_score'], res['p_value'],
                                      var.replace('_score','').replace('_',' ').title())
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
@@ -1034,7 +1110,7 @@ def page_econometrics():
                 f'</div>',
                 unsafe_allow_html=True
             )
-            st.markdown('</div>', unsafe_allow_html=True)
+            #st.markdown('</div>', unsafe_allow_html=True)
 
     spacer(20)
     section_header("GWR Local Coefficient Heatmaps", "Spatial Heterogeneity in Parameter Estimates")
@@ -1053,10 +1129,10 @@ def page_econometrics():
             with tab:
                 cm, cs = st.columns([2, 1])
                 with cm:
-                    st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+                    #st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
                     fig = plot_gwr_coefficients(df, coef_col, f'GWR: {coef_lbl}')
                     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-                    st.markdown('</div>', unsafe_allow_html=True)
+                    #st.markdown('</div>', unsafe_allow_html=True)
                 with cs:
                     cd = df[coef_col].dropna()
                     pos = cd.mean() >= 0
@@ -1087,14 +1163,14 @@ def page_econometrics():
                         unsafe_allow_html=True
                     )
                     spacer(8)
-                    st.markdown(insight_html("📊 Business Interpretation", interp, 'info' if pos else 'warning'),
+                    st.markdown(insight_html("Business Interpretation", interp, 'info' if pos else 'warning'),
                                 unsafe_allow_html=True)
 
     spacer(20)
     section_header("GWR vs OLS Model Comparison", "Local vs Global Goodness of Fit")
     cg, co = st.columns(2)
     with cg:
-        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+        #st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
         gwr_r2 = df[df['model_dipakai'].str.contains('GWR',na=False)]['r2_lokal'].mean() if 'model_dipakai' in df.columns else 0.42
         ols_r2 = df[df['model_dipakai'].str.contains('OLS',na=False)]['r2_lokal'].mean() if 'model_dipakai' in df.columns else 0.28
         r2_v = [gwr_r2 if not np.isnan(gwr_r2) else 0.42, ols_r2 if not np.isnan(ols_r2) else 0.28]
@@ -1107,7 +1183,7 @@ def page_econometrics():
         fig = apply_layout(fig, height=220)
         fig.update_yaxes(range=[0,0.8], title='R² (Goodness of Fit)')
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        st.markdown('</div>', unsafe_allow_html=True)
+        #st.markdown('</div>', unsafe_allow_html=True)
     with co:
         st.markdown(insight_html(
             "Model Selection Rationale",
@@ -1148,10 +1224,10 @@ def page_destination():
     ci, cm = st.columns([1, 2.5])
     with ci:
         st.markdown(
-            f'<div style="background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.18);'
+            f'<div style="background:linear-gradient(135deg,#1D5FAD,#2E86DE);border:none;'
             f'border-radius:10px;padding:12px;margin-bottom:10px;">'
-            f'  <div style="font-size:15px;font-weight:700;color:#FFF;margin-bottom:2px;">{sel}</div>'
-            f'  <div style="font-size:11px;color:#00D4FF;">{dest_types.get(sel,"Priority Destination")}</div>'
+            f'  <div style="font-size:15px;font-weight:700;color:#FFFFFF;margin-bottom:2px;">{sel}</div>'
+            f'  <div style="font-size:11px;color:rgba(255,255,255,0.75);">{dest_types.get(sel,"Priority Destination")}</div>'
             f'</div>',
             unsafe_allow_html=True
         )
@@ -1186,46 +1262,164 @@ def page_destination():
 
     with ta:
         ca2, cb2 = st.columns(2)
+        
         with ca2:
-            section_header("Hotel Type Distribution")
-            st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+            section_header("Distribusi Tipe Hotel")
+            #st.markdown('<div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px;padding:16px 14px 8px;box-shadow:0 1px 4px rgba(15,42,74,0.08);">', unsafe_allow_html=True)
             if 'jenis' in d_df.columns:
-                tc_cnt = d_df['jenis'].value_counts()
-                fig = plot_donut(tc_cnt.index.tolist(), tc_cnt.values.tolist())
+                tc_cnt = d_df['jenis'].value_counts().head(8)
+                colors_bar = ['#1D5FAD','#2E86DE','#0A9396','#1A7A4A','#6741D9','#C47B00','#C0392B','#5DADE2']
+                fig = go.Figure(go.Bar(
+                    y=tc_cnt.index.tolist(),
+                    x=tc_cnt.values.tolist(),
+                    orientation='h',
+                    marker=dict(
+                        color=colors_bar[:len(tc_cnt)],
+                        opacity=0.85,
+                    ),
+                    text=tc_cnt.values.tolist(),
+                    textposition='outside',
+                    textfont=dict(color='#4A6080', size=11),
+                    hovertemplate='<b>%{y}</b><br>Jumlah: %{x}<extra></extra>',
+                ))
+                fig.update_layout(
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    height=280,
+                    margin=dict(l=10, r=40, t=10, b=10),
+                    xaxis=dict(
+                        gridcolor='rgba(15,42,74,0.08)',
+                        tickfont=dict(color='#64748B', size=10),
+                        title='Jumlah Hotel',
+                        title_font=dict(color='#64748B', size=10),
+                    ),
+                    yaxis=dict(
+                        tickfont=dict(color='#334155', size=11),
+                        autorange='reversed',
+                    ),
+                )
                 st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-            st.markdown('</div>', unsafe_allow_html=True)
+            #st.markdown('</div>', unsafe_allow_html=True)
         with cb2:
-            section_header("Star Rating Distribution")
-            st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+            section_header("Distribusi Bintang Hotel")
+            #st.markdown('<div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px;padding:16px 14px 8px;box-shadow:0 1px 4px rgba(15,42,74,0.08);">', unsafe_allow_html=True)
             if 'kasta_bintang' in d_df.columns:
-                sc_cnt = d_df['kasta_bintang'].value_counts()
-                fig = plot_donut(sc_cnt.index.tolist(), sc_cnt.values.tolist(),
-                                 colors=['#F59E0B','#00D4FF','#3B82F6','#A6B4C8'])
+                sc_cnt = d_df['kasta_bintang'].value_counts().head(8)
+                star_colors = ['#C47B00','#1D5FAD','#2E86DE','#0A9396','#6741D9','#1A7A4A','#C0392B','#94A3B8']
+                fig = go.Figure(go.Bar(
+                    y=sc_cnt.index.tolist(),
+                    x=sc_cnt.values.tolist(),
+                    orientation='h',
+                    marker=dict(
+                        color=star_colors[:len(sc_cnt)],
+                        opacity=0.85,
+                    ),
+                    text=sc_cnt.values.tolist(),
+                    textposition='outside',
+                    textfont=dict(color='#4A6080', size=11),
+                    hovertemplate='<b>%{y}</b><br>Jumlah: %{x}<extra></extra>',
+                ))
+                fig.update_layout(
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    height=280,
+                    margin=dict(l=10, r=40, t=10, b=10),
+                    xaxis=dict(
+                        gridcolor='rgba(15,42,74,0.08)',
+                        tickfont=dict(color='#64748B', size=10),
+                        title='Jumlah Hotel',
+                        title_font=dict(color='#64748B', size=10),
+                    ),
+                    yaxis=dict(
+                        tickfont=dict(color='#334155', size=11),
+                        autorange='reversed',
+                    ),
+                )
                 st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        section_header(f"Hotel List — {sel}")
+            #st.markdown('</div>', unsafe_allow_html=True)
+        section_header(f"Daftar Hotel — {sel}")
         for _, row in d_df.nlargest(min(6, len(d_df)), 'opportunity_score').iterrows():
-            rec = str(row.get('rekomendasi_investasi',''))
-            bc  = 'badge-high' if 'Highly' in rec else 'badge-medium' if rec=='Recommended' else 'badge-low' if 'Further' in rec else 'badge-avoid'
-            price = row.get('harga', None)
-            pstr  = f"Rp {int(price):,}" if price and not (isinstance(price,float) and np.isnan(price)) else 'N/A'
+            rec  = str(row.get('rekomendasi_investasi', ''))
+            
+            # Badge warna & teks FULL
+            if 'Sangat' in rec or 'Highly' in rec:
+                badge_bg, badge_color, badge_text = 'rgba(26,122,74,0.12)', '#1A7A4A', 'Sangat Direkomendasikan'
+                badge_border = 'rgba(26,122,74,0.25)'
+            elif rec == 'Recommended' or rec == 'Direkomendasikan':
+                badge_bg, badge_color, badge_text = 'rgba(29,95,173,0.12)', '#1D5FAD', 'Direkomendasikan'
+                badge_border = 'rgba(29,95,173,0.25)'
+            elif 'Perlu' in rec or 'Further' in rec:
+                badge_bg, badge_color, badge_text = 'rgba(196,123,0,0.12)', '#B8680A', 'Perlu Kajian Lebih'
+                badge_border = 'rgba(196,123,0,0.25)'
+            else:
+                badge_bg, badge_color, badge_text = 'rgba(192,57,43,0.12)', '#C0392B', 'Tidak Direkomendasikan'
+                badge_border = 'rgba(192,57,43,0.25)'
+
+            price    = row.get('harga', None)
+            pstr     = f"Rp {int(price):,}" if price and not (isinstance(price, float) and np.isnan(price)) else 'N/A'
+            foto_url = str(row.get('foto_url', '')) if 'foto_url' in row else ''
+            
+            # Gambar: pakai foto_url jika ada, fallback ke emoji
+            if foto_url and foto_url != 'nan' and foto_url.startswith('http'):
+                img_html = (
+                    f'<img src="{foto_url}" '
+                    f'style="width:52px;height:52px;border-radius:8px;object-fit:cover;'
+                    f'flex-shrink:0;border:1px solid #E2E8F0;" '
+                    f'onerror="this.style.display=\'none\';this.nextSibling.style.display=\'flex\';">'
+                    f'<div style="display:none;width:52px;height:52px;border-radius:8px;'
+                    f'background:#EFF6FF;align-items:center;justify-content:center;'
+                    f'font-size:22px;flex-shrink:0;border:1px solid #E2E8F0;">🏨</div>'
+                )
+            else:
+                img_html = (
+                    f'<div style="width:52px;height:52px;border-radius:8px;'
+                    f'background:#EFF6FF;display:flex;align-items:center;justify-content:center;'
+                    f'font-size:22px;flex-shrink:0;border:1px solid #DBEAFE;">🏨</div>'
+                )
+
             st.markdown(
-                f'<div class="hotel-item">'
-                f'  <div style="width:42px;height:42px;border-radius:8px;background:rgba(0,212,255,0.08);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🏨</div>'
-                f'  <div class="hotel-info">'
-                f'    <div class="hotel-name">{row.get("nama_hotel","")}</div>'
-                f'    <div class="hotel-meta">{row.get("kasta_bintang","")} · {row.get("jenis","")} · {pstr}</div>'
+                f'<div style="display:flex;align-items:center;gap:14px;'
+                f'padding:14px 16px;background:#FFFFFF;'
+                f'border:1px solid #E2E8F0;border-radius:10px;margin-bottom:8px;'
+                f'box-shadow:0 1px 4px rgba(15,42,74,0.08);">'
+                
+                # Foto
+                f'  <div style="display:flex;flex-shrink:0;">{img_html}</div>'
+                
+                # Info hotel
+                f'  <div style="flex:1;min-width:0;">'
+                f'    <div style="font-size:13px;font-weight:700;color:#0F2A4A;margin-bottom:3px;'
+                f'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
+                f'{row.get("nama_hotel","")}</div>'
+                f'    <div style="font-size:11px;color:#64748B;">'
+                f'{row.get("kasta_bintang","")} · {row.get("jenis","")} · {pstr}</div>'
                 f'  </div>'
-                f'  <div style="text-align:right;flex-shrink:0;padding-right:10px;">'
-                f'    <div style="font-size:9px;color:#64748B;">opp <span style="color:#22C55E;font-weight:700">{row.get("opportunity_score",0):.0f}</span></div>'
-                f'    <div style="font-size:9px;color:#64748B;">iia <span style="color:#00D4FF;font-weight:700">{row.get("investor_interest_index",0):.0f}</span></div>'
+                
+                # Skor
+                f'  <div style="text-align:center;padding:0 12px;flex-shrink:0;">'
+                f'    <div style="font-size:9px;color:#94A3B8;margin-bottom:2px;">OPP</div>'
+                f'    <div style="font-size:18px;font-weight:800;color:#1A7A4A;">'
+                f'{row.get("opportunity_score",0):.0f}</div>'
                 f'  </div>'
-                f'  <span class="badge {bc}" style="flex-shrink:0;">{rec[:10]}</span>'
+                f'  <div style="text-align:center;padding:0 8px;flex-shrink:0;">'
+                f'    <div style="font-size:9px;color:#94A3B8;margin-bottom:2px;">IIA</div>'
+                f'    <div style="font-size:18px;font-weight:800;color:#1D5FAD;">'
+                f'{row.get("investor_interest_index",0):.0f}</div>'
+                f'  </div>'
+                
+                # Badge — full text, centered, min-width agar tidak terpotong
+                f'  <div style="flex-shrink:0;min-width:160px;text-align:center;">'
+                f'    <span style="display:inline-block;width:100%;text-align:center;'
+                f'background:{badge_bg};color:{badge_color};'
+                f'border:1px solid {badge_border};'
+                f'border-radius:20px;padding:5px 14px;'
+                f'font-size:10px;font-weight:700;white-space:nowrap;">'
+                f'{badge_text}</span>'
+                f'  </div>'
+                
                 f'</div>',
                 unsafe_allow_html=True
             )
-
     def hist_chart(col, color, title_x):
         fig = go.Figure(go.Histogram(x=d_df[col].dropna(), nbinsx=15,
                                      marker=dict(color=color, opacity=0.8, line=dict(width=0))))
@@ -1293,7 +1487,17 @@ def page_destination():
             section_header("Recommendation Breakdown")
             st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
             rc_cnt = d_df['rekomendasi_investasi'].value_counts()
-            rc_clr = ['#22C55E' if 'Highly' in str(l) else '#3B82F6' if str(l)=='Recommended' else '#F59E0B' if 'Further' in str(l) else '#EF4444' for l in rc_cnt.index]
+            rc_clr = []
+            for l in rc_cnt.index:
+                l_str = str(l)
+                if 'Sangat' in l_str or 'Highly' in l_str:
+                    rc_clr.append('#1A7A4A')   # hijau — Sangat Direkomendasikan
+                elif 'Direkomendasikan' in l_str or l_str == 'Recommended':
+                    rc_clr.append('#1D5FAD')   # biru — Direkomendasikan
+                elif 'Perlu' in l_str or 'Further' in l_str or 'Kajian' in l_str:
+                    rc_clr.append('#C47B00')   # oranye — Perlu Kajian
+                else:
+                    rc_clr.append('#C0392B')   # merah — Tidak Direkomendasikan
             st.plotly_chart(plot_donut(rc_cnt.index.tolist(), rc_cnt.values.tolist(), colors=rc_clr), use_container_width=True, config={'displayModeBar':False})
             st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1328,14 +1532,14 @@ def page_strategy():
     with cm:
         # Chart perbandingan destinasi
         section_header("Destination Comparison Overview", "Multi-Metric Intelligence")
-        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+        #st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
         avail_m = [m for m in ['avg_opportunity','avg_competition','avg_ecosystem'] if m in dest_stats.columns]
         if len(avail_m) >= 2:
             fig = plot_grouped_bar(dest_stats, 'dest_display', avail_m,
                                    labels=['Opportunity','Competition','Ecosystem'],
                                    colors=[DESIGN['success'],DESIGN['danger'],DESIGN['accent']], height=280)
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        st.markdown('</div>', unsafe_allow_html=True)
+        #st.markdown('</div>', unsafe_allow_html=True)
 
         spacer(14)
 

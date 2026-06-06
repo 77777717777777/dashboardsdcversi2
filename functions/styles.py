@@ -61,9 +61,31 @@ def inject_css():
             radial-gradient(ellipse at 90% 100%, rgba(10,147,150,0.05) 0%, transparent 50%);
     }
 
-    header { visibility: hidden; }
+    /* Header transparan agar tidak muncul garis hitam */
+    /* Sembunyikan header bawaan Streamlit */
+    [data-testid="stHeader"] {
+        background: transparent !important;
+        height: 0 !important;
+        min-height: 0 !important;
+    }
+
+    /* Sembunyikan menu burger dan footer */
     #MainMenu { visibility: hidden; }
     footer { visibility: hidden; }
+
+    /* Tombol toggle sidebar — pastikan selalu muncul */
+    [data-testid="collapsedControl"] {
+        visibility: visible !important;
+        display: flex !important;
+        z-index: 999 !important;
+        background: var(--bg-card) !important;
+        border: 1px solid var(--border-light) !important;
+        border-radius: 6px !important;
+    }
+
+    [data-testid="collapsedControl"] svg {
+        color: var(--color-navy) !important;
+    }
 
     .block-container {
         padding-top: 1.5rem !important;
@@ -242,7 +264,7 @@ def inject_css():
         display: flex;
         align-items: flex-start;
         gap: 10px;
-        margin: 20px 0 12px 0;
+        margin: 0px 0 10px 0;
     }
 
     .section-header-accent {
@@ -272,26 +294,31 @@ def inject_css():
     /* =========================================
        KPI CARDS
        ========================================= */
-    .kpi-card {
-        background: var(--bg-card);
-        border: 1px solid var(--border-light);
+.kpi-card {
+        border: none;
         border-radius: var(--radius-md);
         padding: 16px 18px;
         position: relative;
-        box-shadow: var(--shadow-sm);
-        transition: box-shadow 0.2s ease, transform 0.2s ease;
+        box-shadow: var(--shadow-md);
         height: 100%;
         overflow: hidden;
     }
 
-    .kpi-card::before {
-        content: '';
-        position: absolute;
-        top: 0; left: 0; right: 0;
-        height: 3px;
-        background: linear-gradient(90deg, var(--color-royal), var(--color-accent));
-        border-radius: var(--radius-md) var(--radius-md) 0 0;
-    }
+    /* Warna solid per tipe */
+    .kpi-card.accent  { background: linear-gradient(135deg, #1D5FAD, #2E86DE); }
+    .kpi-card.success { background: linear-gradient(135deg, #0A6B3A, #1A9A5A); }
+    .kpi-card.warning { background: linear-gradient(135deg, #B8680A, #D97706); }
+    .kpi-card.danger  { background: linear-gradient(135deg, #9B1C1C, #C0392B); }
+    .kpi-card.purple  { background: linear-gradient(135deg, #5B21B6, #7C3AED); }
+    .kpi-card.white   { background: linear-gradient(135deg, #0F2A4A, #1A3A5C); }
+
+    /* Semua teks jadi putih */
+    .kpi-card .kpi-label { color: rgba(255,255,255,0.75) !important; }
+    .kpi-card .kpi-value { color: #FFFFFF !important; }
+    .kpi-card .kpi-sub   { color: rgba(255,255,255,0.6) !important; }
+
+    /* Hapus ::before gradient bar karena card sudah berwarna */
+    .kpi-card::before { display: none; }
 
     .kpi-card:hover {
         box-shadow: var(--shadow-md);
@@ -364,6 +391,7 @@ def inject_css():
         border-radius: var(--radius-md) !important;
         padding: 16px !important;
         box-shadow: var(--shadow-sm) !important;
+        margin-bottom: 0 !important;
     }
 
     /* =========================================

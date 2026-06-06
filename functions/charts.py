@@ -85,15 +85,16 @@ def plot_donut(labels, values, colors=None, height=320):
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
         height=height,
-        margin=dict(l=20, r=20, t=20, b=80),
+        margin=dict(l=10, r=10, t=10, b=80),
         legend=dict(
             font=dict(color=DESIGN['secondary'], size=9),
             bgcolor='rgba(0,0,0,0)',
-            orientation='h',
-            yanchor='bottom',
-            y=-0.35,
+            orientation='v',
+            yanchor='top',
+            y=-0.05,
             xanchor='center',
             x=0.5,
+            itemsizing='constant',
             itemwidth=30
         )
     )
@@ -194,25 +195,152 @@ def plot_gwr_coefficients(df, coef_col, title):
     fig.update_xaxes(tickfont=dict(color=DESIGN['secondary']))
     fig.update_yaxes(tickfont=dict(color=DESIGN['secondary']))
 
-def plot_morans_result(i_val, z_score, p_val, title):
-    """Gauge Chart ala Panel Intelijen untuk Moran's I"""
-    fig = go.Figure(go.Indicator(
-        mode="gauge+number+delta",
-        value=i_val,
-        title={'text': title, 'font': {'size': 12, 'color': DESIGN['secondary']}},
-        delta={'reference': 0, 'increasing': {'color': DESIGN['success']}, 'decreasing': {'color': DESIGN['danger']}},
-        gauge={
-            'axis': {'range': [-1, 1], 'tickcolor': DESIGN['secondary']},
-            'bar': {'color': DESIGN['accent']},
-            'steps': [
-                {'range': [-1, -0.3], 'color': 'rgba(239,68,68,0.2)'},
-                {'range': [-0.3, 0.3], 'color': 'rgba(15,42,74,0.04)'},
-                {'range': [0.3, 1], 'color': 'rgba(34,197,94,0.2)'}
-            ],
-            'threshold': {'line': {'color': "white", 'width': 2}, 'thickness': 0.75, 'value': i_val}
-        }
+def plot_morans_result(I, z_score, p_value, label):
+    """
+    Diverging Bullet Chart untuk Moran's I.
+    Skala -1 (Tersebar) → 0 (Acak) → +1 (Mengelompok)
+    """
+    is_sig = p_value < 0.05
+
+    # Interpretasi otomatis
+    if I >= 0.5:
+        interp_text = "Sangat Mengelompok"
+        bar_color   = '#1A7A4A'
+    elif I >= 0.2:
+        interp_text = "Cukup Mengelompok"
+        bar_color   = '#1D5FAD'
+    elif I >= 0:
+        interp_text = "Pola Lemah"
+        bar_color   = '#C47B00'
+    elif I >= -0.2:
+        interp_text = "Sedikit Tersebar"
+        bar_color   = '#C47B00'
+    else:
+        interp_text = "Tersebar Merata"
+        bar_color   = '#C0392B'
+
+    sig_text  = "" if is_sig else "⚠️ Belum Signifikan"
+    sig_color = '#1A7A4A' if is_sig else '#C47B00'
+
+    fig = go.Figure()
+
+    # ── Track background abu-abu (-1 sampai +1) ──────────────────
+    fig.add_shape(
+        type='rect',
+        x0=-1, x1=1,
+        y0=-0.18, y1=0.18,
+        fillcolor='#E8EFF7',
+        line=dict(width=0),
+        layer='below',
+    )
+
+    # ── Zone referensi tengah (zona acak: -0.1 sampai 0.1) ────────
+    fig.add_shape(
+        type='rect',
+        x0=-0.1, x1=0.1,
+        y0=-0.18, y1=0.18,
+        fillcolor='#D0DCF0',
+        line=dict(width=0),
+        layer='below',
+    )
+
+    # ── Bar nilai Moran's I (dari 0 ke nilai I) ───────────────────
+    fig.add_shape(
+        type='rect',
+        x0=0, x1=I,
+        y0=-0.14, y1=0.14,
+        fillcolor=bar_color,
+        line=dict(width=0),
+        layer='above',
+    )
+
+    # ── Garis tengah (zero line) ──────────────────────────────────
+    fig.add_shape(
+        type='line',
+        x0=0, x1=0,
+        y0=-0.22, y1=0.22,
+        line=dict(color='#4A6080', width=2),
+    )
+
+    # ── Marker titik nilai I ──────────────────────────────────────
+    fig.add_trace(go.Scatter(
+        x=[I], y=[0],
+        mode='markers',
+        marker=dict(
+            symbol='diamond',
+            size=12,
+            color='white',
+            line=dict(color=bar_color, width=2.5),
+        ),
+        showlegend=False,
+        hovertemplate=f"Moran's I = {I:.3f}<extra></extra>",
     ))
-    fig.update_layout(height=180, margin=dict(l=20, r=20, t=30, b=10), paper_bgcolor='rgba(0,0,0,0)', font=dict(color=DESIGN['text']))
+
+    # ── Annotation nilai I di atas bar ────────────────────────────
+    fig.add_annotation(
+        x=I, y=0.32,
+        text=f"<b>{I:.3f}</b>",
+        showarrow=False,
+        font=dict(size=13, color=bar_color, family='Plus Jakarta Sans'),
+        xanchor='center',
+    )
+
+    # ── Label skala ───────────────────────────────────────────────
+    for xpos, txt, anchor in [
+        (-1.0, '−1<br><span style="font-size:8px">Tersebar</span>',  'left'),
+        ( 0.0, '0<br><span style="font-size:8px">Acak</span>',       'center'),
+        ( 1.0, '+1<br><span style="font-size:8px">Mengelompok</span>', 'right'),
+    ]:
+        fig.add_annotation(
+            x=xpos, y=-0.38,
+            text=txt,
+            showarrow=False,
+            font=dict(size=9, color='#8A9BB0'),
+            xanchor=anchor,
+            align=anchor,
+        )
+
+    # ── Label interpretasi & signifikansi ─────────────────────────
+    fig.add_annotation(
+        x=0, y=0.58,
+        text=f"<b style='color:#0F2A4A'>{interp_text}</b>"
+             f"  <span style='color:{sig_color};font-size:9px'>{sig_text}</span>",
+        showarrow=False,
+        font=dict(size=10, color='#0F2A4A'),
+        xanchor='center',
+    )
+
+    # ── Tick marks -1, -0.5, 0, 0.5, +1 ─────────────────────────
+    for xt in [-1, -0.5, 0, 0.5, 1]:
+        fig.add_shape(
+            type='line',
+            x0=xt, x1=xt,
+            y0=-0.18, y1=-0.23,
+            line=dict(color='#8A9BB0', width=1),
+        )
+
+    fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        height=160,
+        margin=dict(l=20, r=20, t=40, b=40),
+        xaxis=dict(
+            range=[-1.15, 1.15],
+            showgrid=False,
+            showticklabels=False,
+            zeroline=False,
+            fixedrange=True,
+        ),
+        yaxis=dict(
+            range=[-0.6, 0.75],
+            showgrid=False,
+            showticklabels=False,
+            zeroline=False,
+            fixedrange=True,
+        ),
+        font=dict(color='#4A6080', family='DM Sans', size=10),
+    )
+
     return fig
 
 # ==========================================
