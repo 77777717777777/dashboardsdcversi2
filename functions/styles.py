@@ -256,14 +256,14 @@ def inject_css():
     }
 
     .section-title {
-        font-size: 15px;
+        font-size: 13px !important;   /* turun dari 15px */
         font-weight: 700;
         color: var(--color-navy);
         font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
 
     .section-subtitle {
-        font-size: 11px;
+        font-size: 10px !important;   /* turun dari 11px */
         color: var(--text-muted);
         margin-top: 2px;
         font-weight: 400;
@@ -337,6 +337,15 @@ def inject_css():
     .kpi-trend.up   { background: rgba(26,122,74,0.1);  color: var(--color-success); }
     .kpi-trend.down { background: rgba(192,57,43,0.1);  color: var(--color-danger);  }
     .kpi-trend.neutral { background: rgba(74,96,128,0.1); color: var(--text-secondary); }
+    
+    /* KPI — 4 kolom penuh rata kiri-kanan */
+    div[data-testid="stHorizontalBlock"]:has(.kpi-card) {
+        gap: 8px !important;
+        }
+
+    div[data-testid="stHorizontalBlock"]:has(.kpi-card) > div {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;}
 
     /* Warna nilai KPI */
     .accent  { color: var(--color-accent) !important; }
@@ -603,23 +612,42 @@ def inject_css():
         font-size: 13px !important;
     }
 
-    /* Tab styling */
+    /* =========================================
+    TAB KPI — PENUH & RATA TENGAH
+    ========================================= */
+
+    /* Buat tab list penuh lebar container */
     [data-testid="stTabs"] [data-baseweb="tab-list"] {
-        background: var(--bg-primary) !important;
-        border-radius: var(--radius-sm) !important;
-        gap: 2px !important;
-        padding: 3px !important;
-        border: 1px solid var(--border-light) !important;
+        width: 100% !important;
+        display: flex !important;
+        justify-content: center !important;
     }
 
+    /* Tiap tab mengisi ruang secara merata */
     [data-testid="stTabs"] [data-baseweb="tab"] {
-        background: transparent !important;
-        color: var(--text-secondary) !important;
+        flex: 1 1 0 !important;
+        text-align: center !important;
+        justify-content: center !important;
+        min-width: 0 !important;
+        padding: 8px 0 !important;
+        font-size: 13px !important;}
+
+    /* =========================================
+    SECTION HEADER — judul sub bab lebih kecil
+    ========================================= */
+    .section-title {
         font-size: 12px !important;
         font-weight: 600 !important;
-        border-radius: 5px !important;
-        padding: 6px 14px !important;
+        color: var(--color-navy) !important;
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
+
+    .section-subtitle {
+        font-size: 10px !important;
+        color: var(--text-muted) !important;
+        margin-top: 2px !important;
+        font-weight: 400 !important;   
+        }
 
     [data-testid="stTabs"] [aria-selected="true"] {
         background: var(--bg-card) !important;
@@ -641,6 +669,30 @@ def inject_css():
     [data-testid="stSidebar"] [data-testid="stRadio"] label {
         color: rgba(255,255,255,0.75) !important;
         font-size: 12px !important;
+    }
+    
+    /* =========================================
+   RADIO BUTTON — DI LUAR SIDEBAR (konten utama)
+   ========================================= */
+   /* Teks label pilihan */
+   [data-testid="stRadio"] label p,
+    [data-testid="stRadio"] label span {
+        color: var(--text-primary) !important;
+        font-size: 12px !important;
+        font-weight: 500 !important;
+    }
+
+    /* Pilihan yang sedang aktif */
+    [data-testid="stRadio"] label[data-checked="true"] p,
+    [data-testid="stRadio"] label[data-checked="true"] span {
+        color: var(--color-royal) !important;
+        font-weight: 700 !important;
+    }
+
+    /* Hover */
+    [data-testid="stRadio"] label:hover p,
+    [data-testid="stRadio"] label:hover span {
+        color: var(--color-accent) !important;
     }
 
     /* Spinner */
@@ -682,6 +734,9 @@ def inject_css():
         border: none;
         border-top: 1px solid rgba(255,255,255,0.08);
         margin: 14px 0;
+    .block-container hr.premium-divider {
+        border-top: 1px solid var(--border-light); /* di area konten */
+        }
     }
 
     </style>

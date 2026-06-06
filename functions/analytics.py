@@ -282,8 +282,8 @@ def generate_ai_insights(df, dest_stats):
     top_opp = dest_stats.nlargest(1, 'avg_opportunity').iloc[0]
     insights.append({
         'type': 'success',
-        'title': f"{top_opp['dest_display']} — Primary Investment Zone",
-        'text': f"Records the highest national opportunity score ({top_opp['avg_opportunity']:.1f}/100) combining low market saturation and high ecosystem readiness."
+        'title': f"{top_opp['dest_display']} — Zona Investasi Utama",
+        'text': f"Mencatat skor peluang tertinggi secara nasional ({top_opp['avg_opportunity']:.1f}/100). Tingkat persaingan masih rendah dengan kesiapan ekosistem wisata yang baik."
     })
     
     # Insight 2: Saturation Risk
@@ -291,8 +291,8 @@ def generate_ai_insights(df, dest_stats):
     if top_comp['avg_competition'] > 65:
         insights.append({
             'type': 'danger',
-            'title': f"{top_comp['dest_display']} — Margin Compression Risk",
-            'text': f"High competition score ({top_comp['avg_competition']:.1f}%) signals market saturation. Recommend halting standard mid-range developments here."
+            'title': f"{top_comp['dest_display']} — Risiko Kejenuhan Pasar",
+            'text': f"Skor persaingan tinggi ({top_comp['avg_competition']:.1f}%) menunjukkan pasar sudah sangat padat. Pembangunan akomodasi kelas menengah di sini tidak disarankan."
         })
         
     # Insight 3: Eco/Nature Branding Potential
@@ -301,8 +301,8 @@ def generate_ai_insights(df, dest_stats):
         if nature_pct < 30:
             insights.append({
                 'type': 'warning',
-                'title': 'Untapped Eco-Branding Potential',
-                'text': f"Only {nature_pct:.1f}% of properties utilize nature-based branding. High opportunity for new entrants to capture premium eco-tourism demand."
+                'title': 'Potensi Branding Alam Belum Dimanfaatkan',
+                'text': f"Hanya {nature_pct:.1f}% properti yang menggunakan nama atau tema berbasis alam. Peluang besar bagi pendatang baru untuk merebut segmen wisata alam premium."
             })
             
     # Insight 4: Ecosystem
@@ -310,8 +310,8 @@ def generate_ai_insights(df, dest_stats):
         top_eco = dest_stats.nlargest(1, 'avg_ecosystem').iloc[0]
         insights.append({
             'type': 'info',
-            'title': f"{top_eco['dest_display']} — Strongest POI Network",
-            'text': f"Leads national ecosystem readiness with a score of {top_eco['avg_ecosystem']:.1f}. High attraction density acts as a strong demand multiplier."
+            'title': f"{top_eco['dest_display']} — Jaringan Atraksi Terkuat",
+            'text': f"Memiliki kesiapan ekosistem terbaik secara nasional dengan skor {top_eco['avg_ecosystem']:.1f}. Kepadatan atraksi wisata di sini menjadi pendorong permintaan yang kuat."
         })
 
     return insights
