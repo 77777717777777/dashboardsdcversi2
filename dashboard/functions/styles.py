@@ -322,6 +322,36 @@ def inject_css():
         padding-top: 0 !important;
         margin-top: -15px !important;
     }
+    /* Wrapper visualisasi premium */
+    .viz-card {
+        background: rgba(13, 33, 55, 0.6) !important;
+        border: 1px solid rgba(0, 212, 255, 0.2) !important;
+        border-radius: 12px !important;
+        padding: 20px !important;
+        backdrop-filter: blur(10px) !important;
+    }
+
+    /* Judul visualisasi yang "ditekan" */
+    .viz-title {
+        font-family: 'Inter', sans-serif !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        color: #E2E8F0 !important;
+        margin-bottom: 15px !important;
+        display: flex !important;
+        align-items: center !important;
+        letter-spacing: 0.5px !important;
+    }
+
+    /* Indikator aksen di samping judul */
+    .viz-accent {
+        width: 3px !important;
+        height: 14px !important;
+        background: #00D4FF !important;
+        margin-right: 10px !important;
+        border-radius: 2px !important;
+    }
     </style>
+
     """
     st.markdown(css, unsafe_allow_html=True)

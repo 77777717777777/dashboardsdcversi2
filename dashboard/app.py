@@ -1,20 +1,19 @@
 """
-Indonesia Tourism Intelligence Platform
+Indonesia Tourism Intelligence Platform — v2.0 Layout Edition
 AI-Powered Spatial Tourism Investment Decision Support System
 Kemenparekraf — Ministry of Tourism & Creative Economy
 
-Run: streamlit run app.py
+Jalankan dengan: streamlit run app.py
 """
 
 import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-import plotly.express as px
 import warnings
 warnings.filterwarnings('ignore')
 
-# ===== PAGE CONFIG (MUST BE FIRST) =====
+# ── PAGE CONFIG (HARUS PALING PERTAMA) ──────────────────────────────
 st.set_page_config(
     page_title="Indonesia Tourism Intelligence Platform",
     page_icon="🗺️",
@@ -22,7 +21,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ===== IMPORTS =====
+# ── IMPORT MODUL ─────────────────────────────────────────────────────
 from functions.styles import inject_css
 from functions.analytics import (
     load_main_data, load_branding_data,
@@ -33,135 +32,226 @@ from functions.analytics import (
 from functions.charts import (
     plot_national_heatmap, plot_competition_demand_quadrant,
     plot_opportunity_ranking, plot_multi_radar,
-    plot_donut, plot_bubble, plot_grouped_bar,
-    plot_gwr_coefficients, plot_branding_bars, plot_heatmap_matrix,
+    plot_donut, plot_grouped_bar,
+    plot_gwr_coefficients, plot_branding_bars,
     plot_morans_result, plot_investment_matrix, apply_layout
 )
 
-# ===== INJECT CSS =====
 inject_css()
 
-# ===== LOAD DATA =====
+# ── LOAD DATA ────────────────────────────────────────────────────────
 @st.cache_data(ttl=3600)
 def load_all_data():
-    df = load_main_data()
-    branding = load_branding_data()
-    return df, branding
+    return load_main_data(), load_branding_data()
 
 df_raw, branding_df = load_all_data()
 dest_stats_raw = get_destination_stats(df_raw)
 
 
-# ===== HELPER: KPI CARD =====
+# ════════════════════════════════════════════════════════════════════
+# KOMPONEN UI — HELPER FUNCTIONS
+# ════════════════════════════════════════════════════════════════════
+
 def kpi_card(label, value, sub='', color='accent', trend=None, trend_dir='up', icon='📊'):
+    """Render satu KPI card sebagai HTML."""
     trend_html = ''
     if trend:
-        td_class = 'up' if trend_dir == 'up' else 'down' if trend_dir == 'down' else 'neutral'
+        cls = 'up' if trend_dir == 'up' else 'down' if trend_dir == 'down' else 'neutral'
         arrow = '↑' if trend_dir == 'up' else '↓' if trend_dir == 'down' else '—'
-        trend_html = f'<div class="kpi-trend {td_class}">{arrow} {trend}</div>'
-    
-    val_class = 'success' if color == 'success' else 'warning' if color == 'warning' else 'danger' if color == 'danger' else 'purple' if color == 'purple' else 'accent' if color == 'accent' else 'white' if color == 'white' else ''
-    
-    return f'<div class="kpi-card">{trend_html}<div class="kpi-label">{icon} {label}</div><div class="kpi-value {val_class}">{value}</div><div class="kpi-sub">{sub}</div></div>'
-
-
-def insight_card(title, text, type_='info'):
-    return f'<div class="insight-card {type_}"><div class="insight-title">{title}</div><div class="insight-body">{text}</div></div>'
+        trend_html = f'<div class="kpi-trend {cls}">{arrow} {trend}</div>'
+    val_cls = color if color in ('success','warning','danger','purple','white') else 'accent'
+    return (
+        f'<div class="kpi-card">'
+        f'  {trend_html}'
+        f'  <div class="kpi-label">{icon}&nbsp;{label}</div>'
+        f'  <div class="kpi-value {val_cls}">{value}</div>'
+        f'  <div class="kpi-sub">{sub}</div>'
+        f'</div>'
+    )
 
 
 def section_header(title, subtitle=''):
+    """
+    Render section header dengan garis vertikal aksen kiri
+    untuk hierarki visual yang tegas.
+    """
     sub_html = f'<div class="section-subtitle">{subtitle}</div>' if subtitle else ''
-    st.markdown(f'<div class="section-header"><div class="section-title">{title}</div>{sub_html}</div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="section-header">'
+        f'  <div class="section-header-accent"></div>'
+        f'  <div class="section-header-text">'
+        f'    <div class="section-title">{title}</div>'
+        f'    {sub_html}'
+        f'  </div>'
+        f'</div>',
+        unsafe_allow_html=True
+    )
 
 
 def page_header(title, subtitle='', icon='📊'):
-    st.markdown(f'<div class="page-header"><div style="display:flex;align-items:center;gap:12px;"><div style="font-size:28px;">{icon}</div><div><div class="page-title">{title}</div><div class="page-subtitle">{subtitle}</div></div></div></div>', unsafe_allow_html=True)
+    """Render page header dengan latar gradien premium."""
+    st.markdown(
+        f'<div class="page-header">'
+        f'  <div class="page-header-icon">{icon}</div>'
+        f'  <div>'
+        f'    <div class="page-title">{title}</div>'
+        f'    <div class="page-subtitle">{subtitle}</div>'
+        f'  </div>'
+        f'</div>',
+        unsafe_allow_html=True
+    )
 
 
-# ===== SIDEBAR =====
-# ===== SIDEBAR: NAVIGATION ONLY =====
-def render_sidebar_nav():
+def viz_card(title, subtitle='', dot_color='#00D4FF'):
+    """
+    Kembalikan string HTML pembuka viz-card.
+    Tutup dengan st.markdown('</div>', unsafe_allow_html=True) setelah konten.
+    CATATAN: Karena Streamlit tidak mendukung nested HTML + widget,
+    fungsi ini hanya merender HEADER card; plotly_chart tetap di luar div.
+    Gunakan pola: section_header() + plotly_chart() + spacer() untuk card effect.
+    """
+    sub_html = (
+        f'<span class="viz-card-subtitle">{subtitle}</span>' if subtitle else ''
+    )
+    return (
+        f'<div class="viz-card">'
+        f'  <div class="viz-card-title">'
+        f'    <div class="viz-card-title-dot" style="background:{dot_color};box-shadow:0 0 6px {dot_color}80;"></div>'
+        f'    {title}'
+        f'    {sub_html}'
+        f'  </div>'
+        f'</div>'
+    )
+
+
+def chart_container(title, subtitle, chart_fn, *args, dot_color='#00D4FF', **kwargs):
+    """
+    Wrapper all-in-one: render section header + viz card border + chart.
+    chart_fn adalah fungsi yang mengembalikan fig Plotly.
+    """
+    # Header dengan aksen vertikal
+    section_header(title, subtitle)
+    # Garis dekoratif tipis di atas area chart
+    st.markdown(
+        f'<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;'
+        f'padding:12px 10px 4px 10px;background:rgba(13,33,55,0.65);'
+        f'backdrop-filter:blur(8px);margin-bottom:12px;">',
+        unsafe_allow_html=True
+    )
+    fig = chart_fn(*args, **kwargs)
+    if fig:
+        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+    st.markdown('</div>', unsafe_allow_html=True)
+
+
+def spacer(px=12):
+    st.markdown(f'<div style="height:{px}px"></div>', unsafe_allow_html=True)
+
+
+def insight_html(title, body, type_='info'):
+    return (
+        f'<div class="insight-card {type_}">'
+        f'  <div class="insight-title">{title}</div>'
+        f'  <div class="insight-body">{body}</div>'
+        f'</div>'
+    )
+
+
+# ════════════════════════════════════════════════════════════════════
+# SIDEBAR — NAVIGASI & STATUS
+# ════════════════════════════════════════════════════════════════════
+
+def render_sidebar():
     with st.sidebar:
         # Logo
-        st.markdown("""
-        <div class="sidebar-logo">
-            <div class="sidebar-logo-icon">🗺</div>
-            <div class="sidebar-logo-text">
-                <h3 style="font-size:15px;">Indonesia Tourism</h3>
-                <p style="font-size:9px;">Intelligence Platform</p>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Navigation
-        pages = {
-            "Executive Overview": "executive",
-            "Spatial Intelligence": "spatial",
-            "Destination Deep Dive": "destination",
-            "The Analytics Engine": "engine",
-            "Investment Opportunity": "investment",
-            "Strategic Recommendations": "strategy",
+        st.markdown(
+            '<div class="sidebar-logo">'
+            '  <div class="sidebar-logo-icon">🗺️</div>'
+            '  <div class="sidebar-logo-text">'
+            '    <h3>Indonesia Tourism</h3>'
+            '    <p>Intelligence Platform</p>'
+            '  </div>'
+            '</div>',
+            unsafe_allow_html=True
+        )
+
+        # Navigasi
+        nav_pages = {
+            "📊 Executive Overview":       "executive",
+            "🗺️ Spatial Intelligence":     "spatial",
+            "🔍 Destination Deep Dive":    "destination",
+            "🧠 Analytics Engine":         "engine",
+            "💰 Investment Intelligence":  "investment",
+            "🎯 Strategic Recommendations":"strategy",
         }
-        
-        st.markdown("<div style='font-size:10px;color:#A6B4C8;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;padding:0 4px;'>NAVIGATION</div>", unsafe_allow_html=True)
-        
+        st.markdown(
+            '<div style="font-size:9px;color:#64748B;letter-spacing:1.2px;'
+            'text-transform:uppercase;margin-bottom:8px;padding:0 2px;">NAVIGASI</div>',
+            unsafe_allow_html=True
+        )
         if 'current_page' not in st.session_state:
             st.session_state.current_page = 'executive'
-        
-        for label, page_id in pages.items():
-            is_active = st.session_state.current_page == page_id
-            if st.button(label, key=f"nav_{page_id}", use_container_width=True):
-                st.session_state.current_page = page_id
+        for label, pid in nav_pages.items():
+            if st.button(label, key=f"nav_{pid}", use_container_width=True):
+                st.session_state.current_page = pid
                 st.rerun()
-        
-        st.markdown("<div class='premium-divider'></div>", unsafe_allow_html=True)
-        
-        # Status bar
-        st.markdown(f"""
-        <div class="status-bar">
-            <div class="status-dot"></div>
-            <div>
-                <div style="color:#00D4FF;font-weight:600;">Live Data · {len(df_raw):,} Hotels</div>
-                <div>Updated: Jun 2026</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
 
-# ===== TOP BAR: HORIZONTAL FILTERS =====
+        st.markdown('<hr class="premium-divider">', unsafe_allow_html=True)
+
+        # Status bar
+        st.markdown(
+            f'<div class="status-bar">'
+            f'  <div class="status-dot"></div>'
+            f'  <div>'
+            f'    <div style="color:#22C55E;font-weight:700;font-size:11px;">Live Data · {len(df_raw):,} Hotels</div>'
+            f'    <div style="font-size:9px;color:#64748B;margin-top:1px;">Updated: Jun 2026</div>'
+            f'  </div>'
+            f'</div>',
+            unsafe_allow_html=True
+        )
+
+render_sidebar()
+
+
+# ════════════════════════════════════════════════════════════════════
+# FILTER BAR — HORIZONTAL DI ATAS KONTEN
+# ════════════════════════════════════════════════════════════════════
+
 def render_top_filters():
-    # Menempatkan filter berjajar secara horizontal
-    st.markdown("<div style='font-size:10px;color:#A6B4C8;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;'>GLOBAL FILTERS</div>", unsafe_allow_html=True)
-    col1, col2, col3, col4 = st.columns(4)
-    
-    all_dests = ['All'] + sorted(df_raw['destinasi'].dropna().unique().tolist())
-    with col1:
-        selected_dests = st.selectbox("📍 Destination", all_dests, key='filter_dest')
-        
-    all_types = ['All'] + sorted(df_raw['jenis'].dropna().unique().tolist()) if 'jenis' in df_raw.columns else ['All']
-    with col2:
-        selected_types = st.selectbox("🏨 Hotel Type", all_types, key='filter_type')
-        
-    all_segments = ['All'] + sorted(df_raw['market_segment'].dropna().unique().tolist()) if 'market_segment' in df_raw.columns else ['All']
-    with col3:
-        selected_segments = st.selectbox("🎯 Market Segment", all_segments, key='filter_seg')
-        
-    with col4:
-        ocean_filter = st.selectbox("🌊 Ocean Status", ['All', 'Red Ocean', 'Blue Ocean'], key='filter_ocean')
-        
-    st.markdown("<div class='premium-divider'></div>", unsafe_allow_html=True)
-    
+    st.markdown(
+        '<div style="font-size:9px;color:#64748B;letter-spacing:1.2px;'
+        'text-transform:uppercase;margin-bottom:6px;">GLOBAL FILTERS</div>',
+        unsafe_allow_html=True
+    )
+    c1, c2, c3, c4 = st.columns([1.5, 1.5, 1.5, 1])
+
+    all_dest = ['All'] + sorted(df_raw['destinasi'].dropna().unique().tolist())
+    with c1:
+        sel_dest = st.selectbox("📍 Destinasi", all_dest, key='f_dest', label_visibility='collapsed')
+
+    all_type = ['All'] + sorted(df_raw['jenis'].dropna().unique().tolist()) if 'jenis' in df_raw.columns else ['All']
+    with c2:
+        sel_type = st.selectbox("🏨 Tipe Hotel", all_type, key='f_type', label_visibility='collapsed')
+
+    all_seg = ['All'] + sorted(df_raw['market_segment'].dropna().unique().tolist()) if 'market_segment' in df_raw.columns else ['All']
+    with c3:
+        sel_seg = st.selectbox("🎯 Segmen", all_seg, key='f_seg', label_visibility='collapsed')
+
+    with c4:
+        ocean = st.selectbox("🌊 Ocean", ['All', 'Red Ocean', 'Blue Ocean'], key='f_ocean', label_visibility='collapsed')
+
+    st.markdown('<hr class="premium-divider">', unsafe_allow_html=True)
+
     return {
-        'destinations': [selected_dests] if selected_dests != 'All' else ['All'],
-        'hotel_types': [selected_types] if selected_types != 'All' else ['All'],
-        'segments': [selected_segments] if selected_segments != 'All' else ['All'],
-        'ocean': [ocean_filter] if ocean_filter != 'All' else ['All'],
-        'opp_range': (0, 100), # Default opportunity range
+        'destinations': [sel_dest] if sel_dest != 'All' else ['All'],
+        'hotel_types':  [sel_type] if sel_type != 'All' else ['All'],
+        'segments':     [sel_seg]  if sel_seg  != 'All' else ['All'],
+        'ocean':        [ocean]    if ocean     != 'All' else ['All'],
+        'opp_range':    (0, 100),
     }
 
-render_sidebar_nav() # Munculkan navigasi di kiri
-filters = render_top_filters() # Munculkan filter horizontal di atas
+filters = render_top_filters()
 
-# Apply filters
 df = filter_dataframe(
     df_raw,
     destinations=filters['destinations'],
@@ -170,1496 +260,1243 @@ df = filter_dataframe(
     ocean_status=filters['ocean'],
     opp_range=filters['opp_range']
 )
-
-# Recompute dest stats with filtered data
-if len(df) > 0:
-    dest_stats = get_destination_stats(df)
-else:
-    dest_stats = dest_stats_raw.copy()
+dest_stats = get_destination_stats(df) if len(df) > 0 else dest_stats_raw.copy()
 
 
-# ===================================================================
-# PAGE 1: EXECUTIVE OVERVIEW
-# ===================================================================
+# ════════════════════════════════════════════════════════════════════
+# PAGE 1 — EXECUTIVE OVERVIEW
+# ════════════════════════════════════════════════════════════════════
+
 def page_executive():
     page_header(
         "Executive Overview",
         "National Tourism Intelligence · Indonesia Super-Priority Destinations",
         "📊"
     )
-    
     kpis = get_national_kpis(df)
-    
-    # ── KPI Row 1 ──
-    cols = st.columns(5)
-    kpi_data = [
-        ("Total Hotels", f"{kpis['total_hotels']:,}", "Super-Priority Network", 'accent', '4.2%', 'up', '🏨'),
-        ("Destinations", str(kpis['total_destinations']), "Super-Priority Cluster", 'white', '0%', 'neutral', '📍'),
-        ("Avg Rating", f"{kpis['avg_rating']}", "★ Out of 5.0", 'warning', '1.2%', 'up', '⭐'),
-        ("Total Reviews", f"{kpis['total_reviews']:,}", "Demand Signals", 'accent', '8.1%', 'up', '💬'),
-        ("Avg Opportunity", f"{kpis['avg_opportunity']}", "National Investment Grade", 'success', '4.8%', 'up', '💡'),
+
+    # ── KPI Baris 1: 5 kolom seimbang ──────────────────────────────
+    k1, k2, k3, k4, k5 = st.columns(5)
+    rows1 = [
+        (k1, "Total Hotels",     f"{kpis['total_hotels']:,}",           "Super-Priority Network",      'accent',  '4.2%','up',  '🏨'),
+        (k2, "Destinations",     str(kpis['total_destinations']),        "Super-Priority Cluster",      'white',   '0%',  'neutral','📍'),
+        (k3, "Avg Rating",       f"{kpis['avg_rating']}",               "★ Out of 5.0",                'warning', '1.2%','up',  '⭐'),
+        (k4, "Total Reviews",    f"{kpis['total_reviews']:,}",           "Demand Signals",              'accent',  '8.1%','up',  '💬'),
+        (k5, "Avg Opportunity",  f"{kpis['avg_opportunity']}",          "National Investment Grade",   'success', '4.8%','up',  '💡'),
     ]
-    for col, (label, val, sub, color, trend, td, icon) in zip(cols, kpi_data):
+    for col, lbl, val, sub, clr, tr, td, ic in rows1:
         with col:
-            st.markdown(kpi_card(label, val, sub, color, trend, td, icon), unsafe_allow_html=True)
-    
-    st.markdown("<div style='margin-top:12px'></div>", unsafe_allow_html=True)
-    
-    # ── KPI Row 2 ──
-    cols2 = st.columns(5)
-    kpi_data2 = [
-        ("Popularity Score", f"{kpis['avg_popularity']:.1f}", "Search & Engagement", 'accent', '5.1%', 'up', '📈'),
-        ("Premium Hotels", str(kpis['total_premium']), f"{kpis['total_premium']/max(kpis['total_hotels'],1)*100:.0f}% of Stock", 'warning', '8.5%', 'up', '👑'),
-        ("Nature Tourism", str(kpis['total_nature']), f"{kpis['total_nature']/max(kpis['total_hotels'],1)*100:.0f}% Nature-Affiliated", 'success', '12.2%', 'up', '🌿'),
-        ("Avg Competition", f"{kpis['avg_competition']:.1f}%", "Competitive Pressure", 'danger', '2.1%', 'down', '⚔️'),
-        ("High Opportunity", str(kpis['high_opportunity']), "Score ≥ 75 Properties", 'success', '6.3%', 'up', '🎯'),
+            st.markdown(kpi_card(lbl, val, sub, clr, tr, td, ic), unsafe_allow_html=True)
+
+    spacer(10)
+
+    # ── KPI Baris 2: 5 kolom seimbang ──────────────────────────────
+    k6, k7, k8, k9, k10 = st.columns(5)
+    rows2 = [
+        (k6,  "Popularity Score",  f"{kpis['avg_popularity']:.1f}",                                        "Search & Engagement",     'accent',  '5.1%', 'up',   '📈'),
+        (k7,  "Premium Hotels",    str(kpis['total_premium']),                                              f"{kpis['total_premium']/max(kpis['total_hotels'],1)*100:.0f}% of Stock", 'warning', '8.5%', 'up',   '👑'),
+        (k8,  "Nature Tourism",    str(kpis['total_nature']),                                               f"{kpis['total_nature']/max(kpis['total_hotels'],1)*100:.0f}% Nature",    'success', '12.2%','up',   '🌿'),
+        (k9,  "Avg Competition",   f"{kpis['avg_competition']:.1f}%",                                      "Competitive Pressure",    'danger',  '2.1%', 'down', '⚔️'),
+        (k10, "High Opportunity",  str(kpis['high_opportunity']),                                           "Score ≥ 75",              'success', '6.3%', 'up',   '🎯'),
     ]
-    for col, (label, val, sub, color, trend, td, icon) in zip(cols2, kpi_data2):
+    for col, lbl, val, sub, clr, tr, td, ic in rows2:
         with col:
-            st.markdown(kpi_card(label, val, sub, color, trend, td, icon), unsafe_allow_html=True)
-    
-    st.markdown("<div style='margin-top:20px'></div>", unsafe_allow_html=True)
-    
-    # ── Main Content ──
-    col_map, col_alerts = st.columns([2.2, 1])
-    
+            st.markdown(kpi_card(lbl, val, sub, clr, tr, td, ic), unsafe_allow_html=True)
+
+    spacer(20)
+
+    # ── Peta Nasional + Alerts ──────────────────────────────────────
+    col_map, col_alerts = st.columns([2.3, 1])
+
     with col_map:
-        section_header("Indonesia Supply Heatmap", f"{dest_stats['dest_display'].nunique()} Destinations · {len(df):,} Hotels · Investment Opportunity Layer")
-        map_tab1, map_tab2, map_tab3 = st.tabs(["🎯 Opportunity", "📊 Demand", "⚔️ Competition"])
-        with map_tab1:
-            fig = plot_national_heatmap(dest_stats, 'avg_opportunity', 'Investment Opportunity')
+        section_header("Indonesia Supply Heatmap",
+                        f"{dest_stats['dest_display'].nunique()} Destinations · {len(df):,} Hotels")
+        # Bungkus tab dalam card border
+        st.markdown(
+            '<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;'
+            'padding:14px 12px 6px;background:rgba(13,33,55,0.65);">',
+            unsafe_allow_html=True
+        )
+        t1, t2, t3 = st.tabs(["🎯 Opportunity", "📊 Demand", "⚔️ Competition"])
+        with t1:
+            fig = plot_national_heatmap(dest_stats, 'avg_opportunity', '')
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        with map_tab2:
-            fig = plot_national_heatmap(dest_stats, 'avg_demand', 'Demand Distribution')
+        with t2:
+            fig = plot_national_heatmap(dest_stats, 'avg_demand', '')
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        with map_tab3:
-            fig = plot_national_heatmap(dest_stats, 'avg_competition', 'Competition Density')
+        with t3:
+            fig = plot_national_heatmap(dest_stats, 'avg_competition', '')
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    
+        st.markdown('</div>', unsafe_allow_html=True)
+
     with col_alerts:
         section_header("Investment Alerts", "AI-Generated Signals")
         insights = generate_ai_insights(df, dest_stats)
-        
-        # Alert cards
-        alert_icons = {'success': '✅', 'danger': '⚠️', 'warning': '🔶', 'info': '🔵'}
-        alert_types = {'success': 'opportunity', 'danger': 'critical', 'warning': 'warning', 'info': 'info'}
-        
+        icons_map  = {'success':'✅','danger':'⚠️','warning':'🔶','info':'🔵'}
+        class_map  = {'success':'opportunity','danger':'critical','warning':'warning','info':'info'}
         for ins in insights:
             t = ins['type']
-            st.markdown(f"""
-            <div class="alert-item {alert_types.get(t,'info')}">
-                <div class="alert-icon">{alert_icons.get(t,'ℹ️')}</div>
-                <div class="alert-content">
-                    <h5>{ins['title']}</h5>
-                    <p>{ins['text']}</p>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-        
+            st.markdown(
+                f'<div class="alert-item {class_map.get(t,"info")}">'
+                f'  <div class="alert-icon">{icons_map.get(t,"ℹ️")}</div>'
+                f'  <div class="alert-content">'
+                f'    <h5>{ins["title"]}</h5>'
+                f'    <p>{ins["text"]}</p>'
+                f'  </div>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
         # Ocean status summary
-        red = kpis['red_ocean_count']
-        blue = kpis['blue_ocean_count']
-        total_ocean = red + blue
-        if total_ocean > 0:
-            st.markdown(f"""
-            <div style="margin-top:12px;background:rgba(13,33,55,0.7);border:1px solid rgba(0,212,255,0.1);border-radius:10px;padding:12px;">
-                <div style="font-size:11px;color:#A6B4C8;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Ocean Status</div>
-                <div style="display:flex;gap:8px;">
-                    <div style="flex:1;text-align:center;background:rgba(239,68,68,0.1);border-radius:8px;padding:8px;">
-                        <div style="font-size:18px;font-weight:800;color:#EF4444;">{red}</div>
-                        <div style="font-size:10px;color:#A6B4C8;">Red Ocean</div>
-                    </div>
-                    <div style="flex:1;text-align:center;background:rgba(0,212,255,0.1);border-radius:8px;padding:8px;">
-                        <div style="font-size:18px;font-weight:800;color:#00D4FF;">{blue}</div>
-                        <div style="font-size:10px;color:#A6B4C8;">Blue Ocean</div>
-                    </div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    st.markdown("<div style='margin-top:20px'></div>", unsafe_allow_html=True)
-    
-    # ── Bottom Charts ──
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
+        red, blue = kpis['red_ocean_count'], kpis['blue_ocean_count']
+        if red + blue > 0:
+            st.markdown(
+                f'<div style="margin-top:10px;background:rgba(13,33,55,0.7);'
+                f'border:1px solid rgba(0,212,255,0.1);border-radius:10px;padding:12px;">'
+                f'  <div style="font-size:9px;color:#64748B;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Ocean Status</div>'
+                f'  <div style="display:flex;gap:8px;">'
+                f'    <div style="flex:1;text-align:center;background:rgba(239,68,68,0.08);border-radius:8px;padding:8px;">'
+                f'      <div style="font-size:20px;font-weight:800;color:#EF4444;">{red}</div>'
+                f'      <div style="font-size:10px;color:#64748B;">Red Ocean</div></div>'
+                f'    <div style="flex:1;text-align:center;background:rgba(0,212,255,0.08);border-radius:8px;padding:8px;">'
+                f'      <div style="font-size:20px;font-weight:800;color:#00D4FF;">{blue}</div>'
+                f'      <div style="font-size:10px;color:#64748B;">Blue Ocean</div></div>'
+                f'  </div>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
+
+    spacer(20)
+
+    # ── Baris bawah: 3 chart dengan proporsi seimbang ──────────────
+    ca, cb, cc = st.columns(3)
+
+    with ca:
         section_header("Opportunity Ranking", "By Investment Score")
-        fig = plot_opportunity_ranking(dest_stats, 'avg_opportunity', 'Avg Opportunity Score')
+        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+        fig = plot_opportunity_ranking(dest_stats, 'avg_opportunity', '')
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    
-    with col2:
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with cb:
         section_header("Competition vs Demand", "Strategic Quadrant Matrix")
+        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
         fig = plot_competition_demand_quadrant(dest_stats)
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    
-    with col3:
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with cc:
         section_header("Market Segment Mix", "By Hotel Count")
+        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
         if 'market_segment' in df.columns:
-            seg_counts = df['market_segment'].value_counts()
-            colors = ['#A855F7', '#00D4FF', '#3B82F6', '#F59E0B', '#22C55E', '#EF4444', '#F97316']
-            fig = plot_donut(seg_counts.index.tolist(), seg_counts.values.tolist(), colors=colors)
+            seg_c = df['market_segment'].value_counts()
+            fig = plot_donut(seg_c.index.tolist(), seg_c.values.tolist(),
+                             colors=['#A855F7','#00D4FF','#3B82F6','#F59E0B','#22C55E','#EF4444','#F97316'])
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    
-    st.markdown("<div style='margin-top:20px'></div>", unsafe_allow_html=True)
-    
-    col4, col5 = st.columns(2)
-    with col4:
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    spacer(20)
+
+    # ── Radar + AI Insight ──────────────────────────────────────────
+    cd, ce = st.columns([1.1, 1])
+
+    with cd:
         section_header("Destination Multi-Metric Radar", "Comparative Analysis")
-        metrics = ['avg_opportunity', 'avg_competition', 'avg_ecosystem', 'avg_demand', 'avg_iia']
-        available = [m for m in metrics if m in dest_stats.columns]
-        if len(available) >= 3:
-            fig = plot_multi_radar(dest_stats, available)
+        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+        metrics = [m for m in ['avg_opportunity','avg_competition','avg_ecosystem','avg_demand','avg_iia'] if m in dest_stats.columns]
+        if len(metrics) >= 3:
+            fig = plot_multi_radar(dest_stats, metrics)
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    
-    with col5:
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with ce:
         section_header("AI Strategic Insights", "Live Intelligence")
-        st.markdown(f"""
-        <div class="insight-card success">
-            <div class="insight-title">Frontier Markets</div>
-            <div class="insight-body">{insights[0]['text'] if insights else 'Loading...'}</div>
-        </div>
-        """, unsafe_allow_html=True)
-        if len(insights) > 1:
-            st.markdown(f"""
-            <div class="insight-card danger">
-                <div class="insight-title">Saturation Risk</div>
-                <div class="insight-body">{insights[1]['text']}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        if len(insights) > 2:
-            st.markdown(f"""
-            <div class="insight-card warning">
-                <div class="insight-title">Premium Gap</div>
-                <div class="insight-body">{insights[2]['text']}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        if len(insights) > 3:
-            st.markdown(f"""
-            <div class="insight-card">
-                <div class="insight-title">Eco-Luxury Play</div>
-                <div class="insight-body">{insights[3]['text']}</div>
-            </div>
-            """, unsafe_allow_html=True)
+        if not insights:
+            insights = []
+        type_label = [('success','Frontier Markets'),('danger','Saturation Risk'),
+                      ('warning','Premium Gap'),('info','Eco-Luxury Play')]
+        for i, (t, lbl) in enumerate(type_label):
+            if i < len(insights):
+                st.markdown(insight_html(lbl, insights[i]['text'], t), unsafe_allow_html=True)
 
 
-# ===================================================================
-# PAGE 2: SPATIAL INTELLIGENCE
-# ===================================================================
+# ════════════════════════════════════════════════════════════════════
+# PAGE 2 — SPATIAL INTELLIGENCE
+# ════════════════════════════════════════════════════════════════════
+
 def page_spatial():
     from functions.maps import render_main_map
     from streamlit_folium import st_folium
-    
+
     page_header("Spatial Intelligence", "GIS Intelligence Center · Multi-Layer Accommodation Analysis", "🗺️")
-    
-    col_layers, col_map = st.columns([1, 3.5])
-    
+
+    col_layers, col_map = st.columns([1, 3.2])
+
     with col_layers:
-        st.markdown("<div style='font-size:11px;color:#A6B4C8;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;'>MAP LAYERS</div>", unsafe_allow_html=True)
-        
-        layer_options = {
+        st.markdown('<div style="font-size:9px;color:#64748B;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:10px;">MAP LAYERS</div>', unsafe_allow_html=True)
+        layer_opts = {
             "⚡ Investment Opportunity": "opportunity",
-            "🔥 Demand Heatmap": "supply",
-            "⚔️ Competition Density": "competition",
-            "🌊 Red vs Blue Ocean": "ocean",
-            "🔬 DBSCAN Clusters": "cluster",
-            "🌿 Attraction Network": "attraction",
-            "👑 Premium Hotels": "premium",
+            "🔥 Demand Heatmap":        "supply",
+            "⚔️ Competition Density":    "competition",
+            "🌊 Red vs Blue Ocean":     "ocean",
+            "🔬 DBSCAN Clusters":       "cluster",
+            "🌿 Attraction Network":    "attraction",
+            "👑 Premium Hotels":        "premium",
         }
-        
-        selected_layer = st.radio("", list(layer_options.keys()), key='map_layer')
-        layer_id = layer_options[selected_layer]
-        
-        st.markdown("<div class='premium-divider'></div>", unsafe_allow_html=True)
-        
-        st.markdown("<div style='font-size:11px;color:#A6B4C8;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;'>DESTINATION</div>", unsafe_allow_html=True)
-        
+        sel_layer = st.radio("", list(layer_opts.keys()), key='map_layer')
+        layer_id = layer_opts[sel_layer]
+
+        st.markdown('<hr class="premium-divider">', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:9px;color:#64748B;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:8px;">DESTINASI</div>', unsafe_allow_html=True)
+
         for _, row in dest_stats.iterrows():
             opp = row.get('avg_opportunity', 0)
-            n = row.get('n_hotels', 0)
-            color_class = 'high' if opp >= 70 else 'medium' if opp >= 50 else 'low'
-            st.markdown(f"""
-            <div class="dest-item">
-                <span>{row['dest_display']}</span>
-                <span class="dest-count {color_class}">{n}</span>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        st.markdown(f"""
-        <div style="margin-top:12px;padding:10px;background:rgba(13,33,55,0.7);border-radius:8px;border:1px solid rgba(0,212,255,0.1);">
-            <div style="font-size:10px;color:#A6B4C8;margin-bottom:6px;">LEGEND</div>
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-                <div style="width:10px;height:10px;border-radius:50%;background:#22C55E;"></div>
-                <span style="font-size:10px;color:#A6B4C8;">High Opportunity</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-                <div style="width:10px;height:10px;border-radius:50%;background:#00D4FF;"></div>
-                <span style="font-size:10px;color:#A6B4C8;">Moderate</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-                <div style="width:10px;height:10px;border-radius:50%;background:#F59E0B;"></div>
-                <span style="font-size:10px;color:#A6B4C8;">Low</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:6px;">
-                <div style="width:10px;height:10px;border-radius:50%;background:#EF4444;"></div>
-                <span style="font-size:10px;color:#A6B4C8;">Saturated</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    
+            n   = row.get('n_hotels', 0)
+            cls = 'high' if opp >= 70 else 'medium' if opp >= 50 else 'low'
+            st.markdown(
+                f'<div class="dest-item">'
+                f'  <span>{row["dest_display"]}</span>'
+                f'  <span class="dest-count {cls}">{n}</span>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
+
+        # Legenda
+        st.markdown(
+            '<div style="margin-top:10px;padding:10px;background:rgba(13,33,55,0.7);'
+            'border:1px solid rgba(0,212,255,0.1);border-radius:8px;">'
+            '<div style="font-size:9px;color:#64748B;letter-spacing:0.8px;text-transform:uppercase;margin-bottom:7px;">LEGENDA</div>'
+            + ''.join([
+                f'<div style="display:flex;align-items:center;gap:7px;margin-bottom:5px;">'
+                f'  <div style="width:8px;height:8px;border-radius:50%;background:{c};flex-shrink:0;"></div>'
+                f'  <span style="font-size:10px;color:#A6B4C8;">{lbl}</span>'
+                f'</div>'
+                for c, lbl in [('#22C55E','High Opportunity'),('#00D4FF','Moderate'),('#F59E0B','Low'),('#EF4444','Saturated')]
+            ])
+            + '</div>',
+            unsafe_allow_html=True
+        )
+
     with col_map:
-        st.markdown(f"""
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-            <div style="width:8px;height:8px;border-radius:50%;background:#00D4FF;animation:pulse 2s infinite;"></div>
-            <span style="font-size:12px;font-weight:600;color:#00D4FF;">{selected_layer.split(' ',1)[1]}</span>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        with st.spinner("🗺️ Rendering spatial intelligence layer..."):
-            sample_df = df.sample(min(800, len(df)), random_state=42) if len(df) > 800 else df
-            m = render_main_map(sample_df, layer_id)
-            st_folium(m, height=520, use_container_width=True, returned_objects=[])
-        
-        # Spatial stats below map
-        stat_cols = st.columns(4)
-        stat_data = [
-            ("Hotels Mapped", f"{len(df):,}", DESIGN['accent']),
-            ("High Opportunity", f"{int((df['opportunity_score']>=75).sum()):,}", DESIGN['success']),
-            ("Red Ocean Zones", f"{int(df['status_ocean'].str.contains('Red',na=False).sum()):,}", DESIGN['danger']),
-            ("Avg Ecosystem Score", f"{df['ecosystem_score'].mean():.1f}", DESIGN['secondary']),
+        # Label layer aktif
+        st.markdown(
+            f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">'
+            f'  <div style="width:7px;height:7px;border-radius:50%;background:#00D4FF;'
+            f'box-shadow:0 0 6px rgba(0,212,255,0.6);"></div>'
+            f'  <span style="font-size:12px;font-weight:600;color:#00D4FF;">{sel_layer.split(" ",1)[1]}</span>'
+            f'</div>',
+            unsafe_allow_html=True
+        )
+        # Border card untuk peta
+        st.markdown(
+            '<div style="border:1px solid rgba(0,212,255,0.15);border-radius:12px;overflow:hidden;">',
+            unsafe_allow_html=True
+        )
+        with st.spinner("Memuat layer spasial..."):
+            sample = df.sample(min(800, len(df)), random_state=42) if len(df) > 800 else df
+            m = render_main_map(sample, layer_id)
+            st_folium(m, height=500, use_container_width=True, returned_objects=[])
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        spacer(10)
+        # Stats ringkas di bawah peta — 4 kolom seimbang
+        s1, s2, s3, s4 = st.columns(4)
+        stats_items = [
+            (s1, "Hotels Mapped",      f"{len(df):,}",                                           "#00D4FF"),
+            (s2, "High Opportunity",   f"{int((df['opportunity_score']>=75).sum()):,}",           "#22C55E"),
+            (s3, "Red Ocean Zones",    f"{int(df['status_ocean'].str.contains('Red',na=False).sum()):,}", "#EF4444"),
+            (s4, "Avg Ecosystem",      f"{df['ecosystem_score'].mean():.1f}",                     "#3B82F6"),
         ]
-        for col, (label, val, color) in zip(stat_cols, stat_data):
+        for col, lbl, val, clr in stats_items:
             with col:
-                st.markdown(f"""
-                <div style="background:rgba(13,33,55,0.7);border:1px solid rgba(0,212,255,0.1);border-radius:8px;padding:10px;text-align:center;">
-                    <div style="font-size:10px;color:#A6B4C8;margin-bottom:4px;">{label}</div>
-                    <div style="font-size:18px;font-weight:800;color:{color};">{val}</div>
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(
+                    f'<div style="background:rgba(13,33,55,0.7);border:1px solid rgba(0,212,255,0.1);'
+                    f'border-radius:8px;padding:10px;text-align:center;">'
+                    f'  <div style="font-size:10px;color:#64748B;margin-bottom:4px;">{lbl}</div>'
+                    f'  <div style="font-size:18px;font-weight:800;color:{clr};">{val}</div>'
+                    f'</div>',
+                    unsafe_allow_html=True
+                )
 
 
-# ===================================================================
-# PAGE 3: COMPETITION INTELLIGENCE
-# ===================================================================
+# ════════════════════════════════════════════════════════════════════
+# PAGE 3 — COMPETITION INTELLIGENCE
+# ════════════════════════════════════════════════════════════════════
+
 def page_competition():
-    page_header("Competition Intelligence", "Market Structure Analysis · Red Ocean vs Blue Ocean Detection", "⚔️")
-    
-    # Top KPIs
-    cols = st.columns(4)
-    avg_comp = df['competition_score'].mean()
-    red_count = df['status_ocean'].str.contains('Red', na=False).sum()
-    blue_count = df['status_ocean'].str.contains('Blue', na=False).sum()
-    most_competitive = dest_stats.nlargest(1, 'avg_competition').iloc[0]['dest_display'] if not dest_stats.empty else 'N/A'
-    
-    kpi_items = [
-        ("Avg Competition Score", f"{avg_comp:.1f}%", "National Average", 'danger'),
-        ("Red Ocean Zones", f"{red_count:,}", "Saturated Markets", 'danger'),
-        ("Blue Ocean Zones", f"{blue_count:,}", "Opportunity Markets", 'accent'),
-        ("Most Competitive", most_competitive, "Highest Saturation", 'warning'),
-    ]
-    for col, (label, val, sub, color) in zip(cols, kpi_items):
-        with col:
-            st.markdown(kpi_card(label, val, sub, color, None, None, '⚔️'), unsafe_allow_html=True)
-    
-    st.markdown("<div style='margin-top:20px'></div>", unsafe_allow_html=True)
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        section_header("Competition Ranking by Destination", "Descending Order")
-        fig = plot_opportunity_ranking(dest_stats, 'avg_competition', 'Avg Competition Score')
-        # Reverse color logic for competition (high = bad)
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    
-    with col2:
-        section_header("Red Ocean vs Blue Ocean", "Market Saturation Analysis")
-        ocean_counts = df['status_ocean'].value_counts()
-        labels = [l.split('(')[0].strip() for l in ocean_counts.index]
-        colors = ['#EF4444' if 'Red' in l else '#00D4FF' for l in ocean_counts.index]
-        fig = plot_donut(labels, ocean_counts.values.tolist(), colors=colors)
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    
-    st.markdown("<div style='margin-top:12px'></div>", unsafe_allow_html=True)
-    
-    col3, col4 = st.columns(2)
-    
-    with col3:
-        section_header("Market Saturation Matrix", "Competition vs Opportunity")
-        fig = plot_investment_matrix(dest_stats)
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    
-    with col4:
-        section_header("Agglomeration Effect Analysis", "GWR Competitor Coefficient by Destination")
-        if 'koef_saingan_radius_1km' in df.columns:
-            coef_by_dest = df.groupby('dest_display')['koef_saingan_radius_1km'].mean().reset_index()
-            coef_by_dest.columns = ['Destination', 'Coefficient']
-            coef_by_dest = coef_by_dest.sort_values('Coefficient')
-            
-            colors = ['#22C55E' if v >= 0 else '#EF4444' for v in coef_by_dest['Coefficient']]
-            
-            fig = go.Figure(go.Bar(
-                x=coef_by_dest['Coefficient'],
-                y=coef_by_dest['Destination'],
-                orientation='h',
-                marker=dict(color=colors, opacity=0.85),
-                text=coef_by_dest['Coefficient'].round(3),
-                textposition='outside',
-                textfont=dict(color='#A6B4C8', size=10),
-                hovertemplate='<b>%{y}</b><br>Coefficient: %{x:.4f}<extra></extra>',
-            ))
-            fig = apply_layout(fig, height=320)
-            fig.update_xaxes(title='GWR Coefficient (+ = Agglomeration, − = Destructive)')
-            fig.add_vline(x=0, line=dict(color='rgba(0,212,255,0.4)', width=1, dash='dot'))
-            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    
-    st.markdown("<div style='margin-top:16px'></div>", unsafe_allow_html=True)
-    section_header("Competition Hotspot Detection", "Top Saturated vs Top Opportunity Markets")
-    
-    col5, col6 = st.columns(2)
-    
-    with col5:
-        st.markdown("**🔴 Top Saturated Destinations**")
-        top_sat = dest_stats.nlargest(5, 'avg_competition')
-        for _, row in top_sat.iterrows():
-            comp = row['avg_competition']
-            pct = comp
-            st.markdown(f"""
-            <div class="prog-container">
-                <div class="prog-label">
-                    <span>{row['dest_display']}</span>
-                    <span style="color:#EF4444;font-weight:700;">{comp:.0f}%</span>
-                </div>
-                <div class="prog-bar"><div class="prog-fill danger" style="width:{pct}%"></div></div>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    with col6:
-        st.markdown("**🟢 Top Blue Ocean Destinations**")
-        top_blue = dest_stats.nsmallest(5, 'avg_competition')
-        for _, row in top_blue.iterrows():
-            comp = row['avg_competition']
-            opp_pct = row.get('avg_opportunity', 100 - comp)
-            st.markdown(f"""
-            <div class="prog-container">
-                <div class="prog-label">
-                    <span>{row['dest_display']}</span>
-                    <span style="color:#00D4FF;font-weight:700;">{opp_pct:.0f} opp</span>
-                </div>
-                <div class="prog-bar"><div class="prog-fill" style="width:{opp_pct}%"></div></div>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    st.markdown("<div style='margin-top:16px'></div>", unsafe_allow_html=True)
-    
-    # Strategic insight
-    st.markdown(f"""
-    <div class="insight-card">
-        <div class="insight-title">⚔️ Strategic Competition Insight</div>
-        <div class="insight-body">
-            The national competition landscape shows significant spatial heterogeneity. Destinations with GWR competitor 
-            coefficients above zero indicate <strong style='color:#22C55E'>agglomeration effects</strong> — where clustering 
-            of accommodations increases total tourism traffic. Negative coefficients signal 
-            <strong style='color:#EF4444'>destructive competition</strong> — new entrants cannibalize existing 
-            operators. Investment in agglomeration-positive destinations yields higher probability of success.
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    page_header("Competition Intelligence", "Market Structure · Red Ocean vs Blue Ocean Detection", "⚔️")
 
-
-# ===================================================================
-# PAGE 4: ATTRACTION ECOSYSTEM INTELLIGENCE
-# ===================================================================
-def page_ecosystem():
-    page_header("Attraction Ecosystem Intelligence", "Unique Selling Point · Tourism Magnet Analysis & Investment Signal Detection", "🌿")
-    
-    cols = st.columns(4)
-    avg_eco = df['ecosystem_score'].mean()
-    avg_atraksi = df['jumlah_atraksi_radius_5km'].mean() if 'jumlah_atraksi_radius_5km' in df.columns else 0
-    avg_dist = df['jarak_ke_atraksi_terdekat_km'].mean() if 'jarak_ke_atraksi_terdekat_km' in df.columns else 0
-    high_eco = (df['ecosystem_score'] >= 75).sum()
-    
-    for col, (label, val, sub, color) in zip(cols, [
-        ("Avg Ecosystem Score", f"{avg_eco:.1f}", "Tourism Magnet Strength", 'success'),
-        ("Avg Attractions Nearby", f"{avg_atraksi:.0f}", "Within 5km Radius", 'accent'),
-        ("Avg Distance to Attraction", f"{avg_dist:.1f} km", "Accessibility Metric", 'warning'),
-        ("High Ecosystem Hotels", f"{high_eco:,}", "Score ≥ 75", 'success'),
+    # KPI 4 kolom
+    k1, k2, k3, k4 = st.columns(4)
+    avg_comp  = df['competition_score'].mean()
+    red_cnt   = df['status_ocean'].str.contains('Red', na=False).sum()
+    blue_cnt  = df['status_ocean'].str.contains('Blue', na=False).sum()
+    top_dest  = dest_stats.nlargest(1, 'avg_competition').iloc[0]['dest_display'] if not dest_stats.empty else 'N/A'
+    for col, (lbl, val, sub, clr) in zip([k1,k2,k3,k4], [
+        ("Avg Competition",  f"{avg_comp:.1f}%", "National Average",    'danger'),
+        ("Red Ocean Zones",  f"{red_cnt:,}",      "Saturated Markets",   'danger'),
+        ("Blue Ocean Zones", f"{blue_cnt:,}",     "Opportunity Markets", 'accent'),
+        ("Most Competitive", top_dest,            "Highest Saturation",  'warning'),
     ]):
         with col:
-            st.markdown(kpi_card(label, val, sub, color, None, None, '🌿'), unsafe_allow_html=True)
-    
-    st.markdown("<div style='margin-top:20px'></div>", unsafe_allow_html=True)
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        section_header("Attraction Density by Destination", "Avg Attractions Within 5km Radius")
-        if 'jumlah_atraksi_radius_5km' in df.columns:
-            atraksi_by_dest = df.groupby('dest_display')['jumlah_atraksi_radius_5km'].mean().reset_index().sort_values('jumlah_atraksi_radius_5km', ascending=True)
+            st.markdown(kpi_card(lbl, val, sub, clr, icon='⚔️'), unsafe_allow_html=True)
+
+    spacer(20)
+
+    # Baris 1: 2 chart seimbang
+    c1, c2 = st.columns(2)
+    with c1:
+        section_header("Competition Ranking", "Per Destinasi")
+        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+        fig = plot_opportunity_ranking(dest_stats, 'avg_competition', '')
+        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with c2:
+        section_header("Red Ocean vs Blue Ocean", "Market Saturation Analysis")
+        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+        ocean_c = df['status_ocean'].value_counts()
+        lbls    = [l.split('(')[0].strip() for l in ocean_c.index]
+        cols_oc = ['#EF4444' if 'Red' in l else '#00D4FF' for l in ocean_c.index]
+        fig = plot_donut(lbls, ocean_c.values.tolist(), colors=cols_oc)
+        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    spacer(14)
+
+    # Baris 2: 2 chart seimbang
+    c3, c4 = st.columns(2)
+    with c3:
+        section_header("Market Saturation Matrix", "Competition vs Opportunity")
+        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+        fig = plot_investment_matrix(dest_stats)
+        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with c4:
+        section_header("Agglomeration Effect (GWR)", "Koefisien Kompetitor per Destinasi")
+        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+        if 'koef_saingan_radius_1km' in df.columns:
+            coef_d = df.groupby('dest_display')['koef_saingan_radius_1km'].mean().reset_index()
+            coef_d.columns = ['Destination', 'Coefficient']
+            coef_d = coef_d.sort_values('Coefficient')
+            clrs   = ['#22C55E' if v >= 0 else '#EF4444' for v in coef_d['Coefficient']]
             fig = go.Figure(go.Bar(
-                y=atraksi_by_dest['dest_display'],
-                x=atraksi_by_dest['jumlah_atraksi_radius_5km'],
-                orientation='h',
-                marker=dict(
-                    color=atraksi_by_dest['jumlah_atraksi_radius_5km'],
-                    colorscale=[[0, '#3B82F6'], [0.5, '#00D4FF'], [1, '#22C55E']],
-                    opacity=0.85,
-                ),
-                text=atraksi_by_dest['jumlah_atraksi_radius_5km'].round(0),
-                textposition='outside',
+                x=coef_d['Coefficient'], y=coef_d['Destination'], orientation='h',
+                marker=dict(color=clrs, opacity=0.85),
+                text=coef_d['Coefficient'].round(3), textposition='outside',
+                textfont=dict(color='#A6B4C8', size=10),
+                hovertemplate='<b>%{y}</b><br>Koef: %{x:.4f}<extra></extra>',
+            ))
+            fig = apply_layout(fig, height=300)
+            fig.update_xaxes(title='+ = Agglomeration  /  − = Destructive')
+            fig.add_vline(x=0, line=dict(color='rgba(0,212,255,0.4)', width=1, dash='dot'))
+            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    spacer(14)
+
+    # Hotspot bars: 2 kolom seimbang
+    c5, c6 = st.columns(2)
+    with c5:
+        section_header("Top Saturated", "🔴 Destinasi Paling Kompetitif")
+        for _, row in dest_stats.nlargest(5, 'avg_competition').iterrows():
+            comp = row['avg_competition']
+            st.markdown(
+                f'<div class="prog-container">'
+                f'  <div class="prog-label"><span>{row["dest_display"]}</span><span style="color:#EF4444;font-weight:700;">{comp:.0f}%</span></div>'
+                f'  <div class="prog-bar"><div class="prog-fill danger" style="width:{comp}%"></div></div>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
+    with c6:
+        section_header("Top Blue Ocean", "🟢 Destinasi Peluang Terbesar")
+        for _, row in dest_stats.nsmallest(5, 'avg_competition').iterrows():
+            opp_pct = row.get('avg_opportunity', 100 - row['avg_competition'])
+            st.markdown(
+                f'<div class="prog-container">'
+                f'  <div class="prog-label"><span>{row["dest_display"]}</span><span style="color:#00D4FF;font-weight:700;">{opp_pct:.0f} opp</span></div>'
+                f'  <div class="prog-bar"><div class="prog-fill" style="width:{opp_pct}%"></div></div>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
+
+    spacer(14)
+    st.markdown(insight_html(
+        "⚔️ Strategic Competition Insight",
+        "Destinasi dengan koefisien GWR positif menunjukkan <strong style='color:#22C55E'>efek aglomerasi</strong> — "
+        "clustering akomodasi meningkatkan traffic wisata. Koefisien negatif menandakan "
+        "<strong style='color:#EF4444'>kompetisi destruktif</strong>. Investasi di destinasi bernilai positif "
+        "memberikan probabilitas sukses lebih tinggi.",
+        'info'
+    ), unsafe_allow_html=True)
+
+
+# ════════════════════════════════════════════════════════════════════
+# PAGE 4 — ATTRACTION ECOSYSTEM
+# ════════════════════════════════════════════════════════════════════
+
+def page_ecosystem():
+    page_header("Attraction Ecosystem Intelligence", "Tourism Magnet Analysis · Investment Signal Detection", "🌿")
+
+    k1, k2, k3, k4 = st.columns(4)
+    avg_eco  = df['ecosystem_score'].mean()
+    avg_atk  = df['jumlah_atraksi_radius_5km'].mean() if 'jumlah_atraksi_radius_5km' in df.columns else 0
+    avg_dist = df['jarak_ke_atraksi_terdekat_km'].mean() if 'jarak_ke_atraksi_terdekat_km' in df.columns else 0
+    hi_eco   = int((df['ecosystem_score'] >= 75).sum())
+    for col, (lbl, val, sub, clr) in zip([k1,k2,k3,k4], [
+        ("Avg Ecosystem Score",      f"{avg_eco:.1f}",   "Tourism Magnet Strength", 'success'),
+        ("Avg Attractions Nearby",   f"{avg_atk:.0f}",   "Within 5km Radius",       'accent'),
+        ("Avg Distance Attraction",  f"{avg_dist:.1f} km","Accessibility Metric",   'warning'),
+        ("High Ecosystem Hotels",    f"{hi_eco:,}",       "Score ≥ 75",             'success'),
+    ]):
+        with col:
+            st.markdown(kpi_card(lbl, val, sub, clr, icon='🌿'), unsafe_allow_html=True)
+
+    spacer(20)
+
+    # Baris 1
+    c1, c2 = st.columns(2)
+    with c1:
+        section_header("Attraction Density by Destination", "Rata-rata Atraksi dalam 5km")
+        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+        if 'jumlah_atraksi_radius_5km' in df.columns:
+            atk_d = df.groupby('dest_display')['jumlah_atraksi_radius_5km'].mean().reset_index().sort_values('jumlah_atraksi_radius_5km', ascending=True)
+            fig = go.Figure(go.Bar(
+                y=atk_d['dest_display'], x=atk_d['jumlah_atraksi_radius_5km'], orientation='h',
+                marker=dict(color=atk_d['jumlah_atraksi_radius_5km'],
+                            colorscale=[[0,'#3B82F6'],[0.5,'#00D4FF'],[1,'#22C55E']], opacity=0.85),
+                text=atk_d['jumlah_atraksi_radius_5km'].round(0), textposition='outside',
                 textfont=dict(color='#A6B4C8', size=10),
             ))
-            fig = apply_layout(fig, height=300)
-            fig.update_xaxes(title='Avg Attractions within 5km')
+            fig = apply_layout(fig, height=280)
+            fig.update_xaxes(title='Avg Attractions in 5km')
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    
-    with col2:
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with c2:
         section_header("Ecosystem Score Ranking", "Destination Ecosystem Health")
-        fig = plot_opportunity_ranking(dest_stats, 'avg_ecosystem', 'Avg Ecosystem Score')
+        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+        fig = plot_opportunity_ranking(dest_stats, 'avg_ecosystem', '')
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    
-    st.markdown("<div style='margin-top:12px'></div>", unsafe_allow_html=True)
-    
-    col3, col4 = st.columns(2)
-    
-    with col3:
-        section_header("Attraction-to-Demand Influence", "Distance vs Demand Score")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    spacer(14)
+
+    # Baris 2
+    c3, c4 = st.columns(2)
+    with c3:
+        section_header("Attraction-to-Demand Influence", "Jarak Atraksi vs Demand Score")
+        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
         if 'jarak_ke_atraksi_terdekat_km' in df.columns:
-            sample = df.sample(min(300, len(df)), random_state=42)
+            smp = df.sample(min(300, len(df)), random_state=42)
             fig = go.Figure(go.Scatter(
-                x=sample['jarak_ke_atraksi_terdekat_km'],
-                y=sample['demand_score'],
+                x=smp['jarak_ke_atraksi_terdekat_km'], y=smp['demand_score'],
                 mode='markers',
-                marker=dict(
-                    color=sample['ecosystem_score'],
-                    colorscale=[[0, '#EF4444'], [0.5, '#F59E0B'], [1, '#22C55E']],
-                    size=6, opacity=0.7,
-                    colorbar=dict(title=dict(text='Eco Score', font=dict(color='#A6B4C8', size=10)),
-                                  tickfont=dict(color='#A6B4C8', size=9), thickness=10,
-                                  bgcolor='rgba(13,33,55,0.8)'),
-                ),
+                marker=dict(color=smp['ecosystem_score'],
+                            colorscale=[[0,'#EF4444'],[0.5,'#F59E0B'],[1,'#22C55E']],
+                            size=5, opacity=0.65,
+                            colorbar=dict(title=dict(text='Eco', font=dict(color='#A6B4C8',size=9)),
+                                          tickfont=dict(color='#A6B4C8',size=8), thickness=9)),
                 hovertemplate='Dist: %{x:.2f}km<br>Demand: %{y:.1f}<extra></extra>',
             ))
-            fig = apply_layout(fig, height=300)
+            fig = apply_layout(fig, height=280)
             fig.update_xaxes(title='Distance to Nearest Attraction (km)')
             fig.update_yaxes(title='Demand Score')
-            # Add trend line
-            from numpy.polynomial import polynomial as P
-            valid = sample.dropna(subset=['jarak_ke_atraksi_terdekat_km', 'demand_score'])
+            valid = smp.dropna(subset=['jarak_ke_atraksi_terdekat_km','demand_score'])
             if len(valid) > 10:
-                x_sorted = np.sort(valid['jarak_ke_atraksi_terdekat_km'].values)
                 coef = np.polyfit(valid['jarak_ke_atraksi_terdekat_km'].values, valid['demand_score'].values, 1)
-                fig.add_trace(go.Scatter(
-                    x=x_sorted, y=np.polyval(coef, x_sorted),
-                    mode='lines', line=dict(color='#00D4FF', width=2, dash='dot'),
-                    name='Trend', showlegend=False,
-                ))
+                xs = np.sort(valid['jarak_ke_atraksi_terdekat_km'].values)
+                fig.add_trace(go.Scatter(x=xs, y=np.polyval(coef, xs), mode='lines',
+                              line=dict(color='#00D4FF', width=2, dash='dot'), showlegend=False))
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    
-    with col4:
-        section_header("Attraction Coverage Gap Analysis", "Supply vs Attraction Density")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with c4:
+        section_header("Attraction Coverage Gap", "Supply vs Attraction Density")
+        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
         if 'jumlah_atraksi_radius_5km' in df.columns:
-            coverage = dest_stats.copy()
-            med_atraksi = df.groupby('dest_display')['jumlah_atraksi_radius_5km'].mean()
-            coverage['avg_atraksi'] = coverage['dest_display'].map(med_atraksi)
-            
-            med_n = coverage['n_hotels'].median()
-            med_a = coverage['avg_atraksi'].median()
-            
-            def coverage_status(row):
-                if row['avg_atraksi'] >= med_a and row['n_hotels'] < med_n:
-                    return 'Undersupply Opportunity'
-                elif row['avg_atraksi'] >= med_a and row['n_hotels'] >= med_n:
-                    return 'Optimal Coverage'
-                elif row['avg_atraksi'] < med_a and row['n_hotels'] >= med_n:
-                    return 'Oversupply Risk'
-                else:
-                    return 'Low Potential'
-            
-            coverage['status'] = coverage.apply(coverage_status, axis=1)
-            
-            status_colors = {
-                'Undersupply Opportunity': '#22C55E',
-                'Optimal Coverage': '#00D4FF',
-                'Oversupply Risk': '#EF4444',
-                'Low Potential': '#F59E0B',
-            }
-            
+            cov = dest_stats.copy()
+            med_atk = df.groupby('dest_display')['jumlah_atraksi_radius_5km'].mean()
+            cov['avg_atraksi'] = cov['dest_display'].map(med_atk)
+            mn, ma = cov['n_hotels'].median(), cov['avg_atraksi'].median()
+            def _cov_status(row):
+                if row['avg_atraksi'] >= ma and row['n_hotels'] < mn: return 'Undersupply'
+                if row['avg_atraksi'] >= ma and row['n_hotels'] >= mn: return 'Optimal'
+                if row['avg_atraksi'] < ma  and row['n_hotels'] >= mn: return 'Oversupply'
+                return 'Low Potential'
+            cov['status'] = cov.apply(_cov_status, axis=1)
+            sc_map = {'Undersupply':'#22C55E','Optimal':'#00D4FF','Oversupply':'#EF4444','Low Potential':'#F59E0B'}
             fig = go.Figure()
-            for status, group in coverage.groupby('status'):
-                color = status_colors.get(status, '#A6B4C8')
+            for status, grp in cov.groupby('status'):
                 fig.add_trace(go.Scatter(
-                    x=group['avg_atraksi'], y=group['n_hotels'],
-                    mode='markers+text',
+                    x=grp['avg_atraksi'], y=grp['n_hotels'], mode='markers+text',
                     name=status,
-                    marker=dict(size=16, color=color, opacity=0.85,
-                                line=dict(color='white', width=1)),
-                    text=group['dest_display'],
-                    textposition='top center',
+                    marker=dict(size=14, color=sc_map.get(status,'#A6B4C8'), opacity=0.85,
+                                line=dict(color='white',width=1)),
+                    text=grp['dest_display'], textposition='top center',
                     textfont=dict(size=9, color='#FFFFFF'),
                 ))
-            
-            fig.add_vline(x=med_a, line=dict(color='rgba(0,212,255,0.2)', dash='dot'))
-            fig.add_hline(y=med_n, line=dict(color='rgba(0,212,255,0.2)', dash='dot'))
-            
-            fig = apply_layout(fig, height=300)
+            fig.add_vline(x=ma, line=dict(color='rgba(0,212,255,0.2)', dash='dot'))
+            fig.add_hline(y=mn, line=dict(color='rgba(0,212,255,0.2)', dash='dot'))
+            fig = apply_layout(fig, height=280)
             fig.update_xaxes(title='Avg Attractions in 5km')
             fig.update_yaxes(title='Number of Hotels')
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    
-    st.markdown("<div style='margin-top:12px'></div>", unsafe_allow_html=True)
-    
-    section_header("White Space Opportunity Zones", "High Attraction Density × Low Competition × Strong Demand")
-    
-    if all(c in df.columns for c in ['jumlah_atraksi_radius_5km', 'competition_score', 'demand_score']):
-        whitespace = df[
-            (df['jumlah_atraksi_radius_5km'] >= df['jumlah_atraksi_radius_5km'].quantile(0.6)) &
-            (df['competition_score'] <= df['competition_score'].quantile(0.4)) &
-            (df['demand_score'] >= df['demand_score'].quantile(0.6))
-        ].nlargest(10, 'opportunity_score')
-        
-        if not whitespace.empty:
-            cols = st.columns(min(5, len(whitespace)))
-            for col, (_, row) in zip(cols, whitespace.head(5).iterrows()):
-                with col:
-                    st.markdown(f"""
-                    <div class="kpi-card">
-                        <div class="kpi-label">🌿 WHITE SPACE</div>
-                        <div style="font-size:12px;font-weight:700;color:#FFFFFF;margin-bottom:4px;">{row.get('nama_hotel','Hotel')[:20]}...</div>
-                        <div style="font-size:10px;color:#A6B4C8;">{row.get('dest_display','')}</div>
-                        <div style="font-size:18px;font-weight:800;color:#22C55E;margin-top:6px;">{row['opportunity_score']:.0f}</div>
-                        <div style="font-size:10px;color:#A6B4C8;">Opportunity Score</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-    
-    st.markdown("""
-    <div class="insight-card success">
-        <div class="insight-title">🌿 Ecosystem Intelligence Insight</div>
-        <div class="insight-body">
-            Destinations with high attraction density and low accommodation supply represent the highest ROI 
-            investment zones. Hotels within 1km of primary attractions show 40% higher review volumes than 
-            distant competitors. Eco-tourism corridors connecting nature attractions to accommodation clusters 
-            are the primary driver of long-term tourism competitiveness.
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    spacer(14)
+    st.markdown(insight_html(
+        "🌿 Ecosystem Intelligence Insight",
+        "Destinasi dengan kepadatan atraksi tinggi dan supply rendah = zona ROI tertinggi. "
+        "Hotel dalam radius 1km dari atraksi utama menunjukkan volume ulasan 40% lebih tinggi. "
+        "Koridor eko-wisata menghubungkan kluster atraksi ke akomodasi adalah driver utama "
+        "daya saing pariwisata jangka panjang.",
+        'success'
+    ), unsafe_allow_html=True)
 
 
-# ===================================================================
-# PAGE 5: NLP BRANDING INTELLIGENCE
-# ===================================================================
+# ════════════════════════════════════════════════════════════════════
+# PAGE 5 — NLP BRANDING INTELLIGENCE
+# ════════════════════════════════════════════════════════════════════
+
 def page_nlp():
-    page_header("NLP Branding Intelligence", "Hotel Naming Strategy Analysis · Nature vs Standard Branding Performance", "💬")
-    
-    # Destination filter
-    all_dests_nlp = ['All'] + sorted(branding_df['destinasi'].dropna().unique().tolist())
-    dest_nlp = st.selectbox("🎯 Filter by Destination", all_dests_nlp, key='nlp_dest')
-    
-    # Filter branding data
-    branding_filtered = branding_df if dest_nlp == 'All' else branding_df[branding_df['destinasi'] == dest_nlp]
-    
-    # KPIs
-    nature_df = branding_filtered[branding_filtered['Tema_Nama'] == 'Mengandung Unsur Alam']
-    standard_df = branding_filtered[branding_filtered['Tema_Nama'] == 'Nama Standar']
-    
-    avg_nature_review = nature_df['Rata_rata_Ulasan'].mean() if len(nature_df) > 0 else 0
-    avg_standard_review = standard_df['Rata_rata_Ulasan'].mean() if len(standard_df) > 0 else 0
-    lift = ((avg_nature_review - avg_standard_review) / max(avg_standard_review, 1)) * 100
-    
-    cols = st.columns(4)
-    kpi_nlp = [
-        ("Nature Branding Avg Reviews", f"{avg_nature_review:.0f}", "Hotels w/ Nature Names", 'success'),
-        ("Standard Branding Avg Reviews", f"{avg_standard_review:.0f}", "Standard Hotel Names", 'accent'),
-        ("Nature Branding Lift", f"+{lift:.1f}%", "vs Standard Naming", 'success' if lift >= 0 else 'danger'),
-        ("Total Properties Analyzed", f"{branding_filtered['Jumlah_Akomodasi'].sum():,}", "Across Segments", 'white'),
-    ]
-    for col, (label, val, sub, color) in zip(cols, kpi_nlp):
-        with col:
-            st.markdown(kpi_card(label, val, sub, color, None, None, '💬'), unsafe_allow_html=True)
-    
-    st.markdown("<div style='margin-top:20px'></div>", unsafe_allow_html=True)
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        section_header("Nature vs Standard Branding Performance", "Average Reviews by Segment & Naming Theme")
-        fig = plot_branding_bars(branding_df, dest_nlp if dest_nlp != 'All' else None)
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    
-    with col2:
-        section_header("Accommodation Count by Theme", "Distribution Across Segments")
-        count_data = branding_filtered.groupby('Tema_Nama')['Jumlah_Akomodasi'].sum()
-        labels = ['Nature Branding' if 'Alam' in l else 'Standard Naming' for l in count_data.index]
-        fig = plot_donut(labels, count_data.values.tolist(),
-                         colors=['#22C55E', '#3B82F6'])
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    
-    st.markdown("<div style='margin-top:12px'></div>", unsafe_allow_html=True)
-    
-    section_header("Branding Performance by Destination × Segment", "Heatmap Matrix")
-    
-    try:
-        pivot_data = branding_df.groupby(['destinasi', 'Tema_Nama'])['Rata_rata_Ulasan'].mean().reset_index()
-        pivot = pivot_data.pivot(index='destinasi', columns='Tema_Nama', values='Rata_rata_Ulasan').fillna(0)
-        
-        fig = go.Figure(go.Heatmap(
-            z=pivot.values,
-            x=[c.replace('Mengandung Unsur Alam', 'Nature').replace('Nama Standar', 'Standard') for c in pivot.columns],
-            y=pivot.index.tolist(),
-            colorscale=[[0, '#061427'], [0.5, '#3B82F6'], [1, '#22C55E']],
-            text=np.round(pivot.values, 0),
-            texttemplate='%{text:.0f}',
-            textfont=dict(color='#FFFFFF', size=11),
-            hovertemplate='<b>%{y}</b><br>Theme: %{x}<br>Avg Reviews: %{z:.0f}<extra></extra>',
-            colorbar=dict(
-                tickfont=dict(color='#A6B4C8', size=9),
-                bgcolor='rgba(13,33,55,0.8)',
-                thickness=12,
-            ),
-        ))
-        
-        fig.update_layout(
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)',
-            height=300,
-            margin=dict(l=0, r=0, t=10, b=0),
-            xaxis=dict(tickfont=dict(color='#A6B4C8', size=11)),
-            yaxis=dict(tickfont=dict(color='#A6B4C8', size=10)),
-        )
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    except Exception as e:
-        st.info("Heatmap requires data across multiple destinations. Use 'All' filter.")
-    
-    st.markdown("<div style='margin-top:12px'></div>", unsafe_allow_html=True)
-    
-    col3, col4 = st.columns(2)
-    
-    with col3:
-        section_header("Segment Performance Analysis", "Premium vs Budget Branding Impact")
-        seg_data = branding_filtered.groupby('Segmen').agg(
-            avg_reviews=('Rata_rata_Ulasan', 'mean'),
-            total_count=('Jumlah_Akomodasi', 'sum')
-        ).reset_index()
-        
-        fig = go.Figure()
-        fig.add_trace(go.Bar(
-            x=seg_data['Segmen'].apply(lambda x: x.split('(')[0].strip()),
-            y=seg_data['avg_reviews'],
-            marker=dict(
-                color=seg_data['avg_reviews'],
-                colorscale=[[0, '#3B82F6'], [1, '#22C55E']],
-                opacity=0.85,
-            ),
-            text=seg_data['avg_reviews'].round(0),
-            textposition='outside',
-            textfont=dict(color='#A6B4C8', size=10),
-        ))
-        fig = apply_layout(fig, height=260)
-        fig.update_xaxes(title='Market Segment', tickangle=-15)
-        fig.update_yaxes(title='Avg Reviews')
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    
-    with col4:
-        section_header("Executive Business Insight", "AI-Generated Branding Intelligence")
-        st.markdown(f"""
-        <div class="insight-card success">
-            <div class="insight-title">🌿 Nature Branding Outperformance</div>
-            <div class="insight-body">Hotels using nature-based branding generate <strong style="color:#22C55E">{lift:.0f}% more reviews</strong> than standard-named competitors — a direct proxy for higher demand and occupancy in eco-tourism destinations.</div>
-        </div>
-        <div class="insight-card">
-            <div class="insight-title">👑 Premium Naming Strategy</div>
-            <div class="insight-body">Premium-segment hotels combining nature themes with quality positioning (e.g., "Komodo Resort & Spa") achieve 2.3x the review velocity of generic premium naming ("Labuan Bajo Grand Hotel").</div>
-        </div>
-        <div class="insight-card warning">
-            <div class="insight-title">💡 Strategic Recommendation</div>
-            <div class="insight-body">New accommodation investments should integrate destination-specific natural elements into brand identity — particularly in Raja Ampat, Wakatobi, and Morotai where eco-tourism positioning commands premium RevPAR.</div>
-        </div>
-        """, unsafe_allow_html=True)
+    page_header("NLP Branding Intelligence", "Hotel Naming Strategy · Nature vs Standard Branding", "💬")
 
+    all_dest_nlp = ['All'] + sorted(branding_df['destinasi'].dropna().unique().tolist())
+    dest_nlp = st.selectbox("🎯 Filter Destinasi", all_dest_nlp, key='nlp_dest')
+    bf = branding_df if dest_nlp == 'All' else branding_df[branding_df['destinasi'] == dest_nlp]
 
-# ===================================================================
-# PAGE 6: INVESTMENT INTELLIGENCE
-# ===================================================================
-def page_investment():
-    page_header("Investment Intelligence", "Investment Decision Engine · Opportunity Ranking & Risk Assessment", "💰")
-    
-    high_opp = df[df['opportunity_score'] >= 75] if 'opportunity_score' in df.columns else pd.DataFrame()
-    emerging = df[(df['opportunity_score'] >= 55) & (df['opportunity_score'] < 75)] if 'opportunity_score' in df.columns else pd.DataFrame()
-    saturated = df[df['competition_score'] >= 75] if 'competition_score' in df.columns else pd.DataFrame()
-    
-    cols = st.columns(4)
-    for col, (label, val, sub, color) in zip(cols, [
-        ("High Priority Targets", f"{len(high_opp):,}", "Opportunity Score ≥ 75", 'success'),
-        ("Emerging Opportunities", f"{len(emerging):,}", "Score 55–75", 'accent'),
-        ("Saturated Markets", f"{len(saturated):,}", "Competition ≥ 75%", 'danger'),
-        ("Avg IIA Score", f"{df['investor_interest_index'].mean():.1f}", "National Composite", 'warning'),
+    nat_df  = bf[bf['Tema_Nama'] == 'Mengandung Unsur Alam']
+    std_df  = bf[bf['Tema_Nama'] == 'Nama Standar']
+    avg_nat = nat_df['Rata_rata_Ulasan'].mean() if len(nat_df) > 0 else 0
+    avg_std = std_df['Rata_rata_Ulasan'].mean() if len(std_df) > 0 else 0
+    lift    = ((avg_nat - avg_std) / max(avg_std, 1)) * 100
+
+    k1,k2,k3,k4 = st.columns(4)
+    for col,(lbl,val,sub,clr) in zip([k1,k2,k3,k4],[
+        ("Nature Branding Avg Reviews", f"{avg_nat:.0f}", "Hotels w/ Nature Names", 'success'),
+        ("Standard Branding Avg Reviews",f"{avg_std:.0f}","Standard Hotel Names",  'accent'),
+        ("Nature Branding Lift",         f"+{lift:.1f}%", "vs Standard Naming",    'success' if lift>=0 else 'danger'),
+        ("Total Properties Analyzed",    f"{bf['Jumlah_Akomodasi'].sum():,}","Across Segments",'white'),
     ]):
         with col:
-            st.markdown(kpi_card(label, val, sub, color, None, None, '💰'), unsafe_allow_html=True)
-    
-    st.markdown("<div style='margin-top:20px'></div>", unsafe_allow_html=True)
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        section_header("Opportunity Ranking by Destination", "By Investment Score")
-        fig = plot_opportunity_ranking(dest_stats, 'avg_iia', 'Avg Investor Interest Index')
+            st.markdown(kpi_card(lbl, val, sub, clr, icon='💬'), unsafe_allow_html=True)
+
+    spacer(20)
+
+    c1, c2 = st.columns(2)
+    with c1:
+        section_header("Nature vs Standard Branding", "Avg Reviews per Segmen & Tema Nama")
+        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+        fig = plot_branding_bars(branding_df, dest_nlp if dest_nlp != 'All' else None)
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    
-    with col2:
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with c2:
+        section_header("Jumlah Akomodasi per Tema", "Distribusi Lintas Segmen")
+        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+        cnt = bf.groupby('Tema_Nama')['Jumlah_Akomodasi'].sum()
+        lbs = ['Nature Branding' if 'Alam' in l else 'Standard Naming' for l in cnt.index]
+        fig = plot_donut(lbs, cnt.values.tolist(), colors=['#22C55E','#3B82F6'])
+        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    spacer(14)
+
+    section_header("Branding Heatmap Matrix", "Destinasi × Tema × Avg Reviews")
+    st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+    try:
+        pv_d  = branding_df.groupby(['destinasi','Tema_Nama'])['Rata_rata_Ulasan'].mean().reset_index()
+        pivot = pv_d.pivot(index='destinasi', columns='Tema_Nama', values='Rata_rata_Ulasan').fillna(0)
+        fig   = go.Figure(go.Heatmap(
+            z=pivot.values,
+            x=[c.replace('Mengandung Unsur Alam','Nature').replace('Nama Standar','Standard') for c in pivot.columns],
+            y=pivot.index.tolist(),
+            colorscale=[[0,'#061427'],[0.5,'#3B82F6'],[1,'#22C55E']],
+            text=np.round(pivot.values,0), texttemplate='%{text:.0f}',
+            textfont=dict(color='#FFFFFF', size=11),
+            colorbar=dict(tickfont=dict(color='#A6B4C8',size=9), bgcolor='rgba(13,33,55,0.8)', thickness=11),
+        ))
+        fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                          height=280, margin=dict(l=0,r=0,t=10,b=0),
+                          xaxis=dict(tickfont=dict(color='#A6B4C8',size=11)),
+                          yaxis=dict(tickfont=dict(color='#A6B4C8',size=10)))
+        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+    except Exception:
+        st.info("Gunakan filter 'All' untuk melihat heatmap lintas destinasi.")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    spacer(14)
+    c3, c4 = st.columns(2)
+    with c3:
+        section_header("Segment Performance", "Premium vs Budget Branding Impact")
+        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+        sd = bf.groupby('Segmen').agg(avg_reviews=('Rata_rata_Ulasan','mean')).reset_index()
+        fig = go.Figure(go.Bar(
+            x=sd['Segmen'].apply(lambda x: x.split('(')[0].strip()), y=sd['avg_reviews'],
+            marker=dict(color=sd['avg_reviews'], colorscale=[[0,'#3B82F6'],[1,'#22C55E']], opacity=0.85),
+            text=sd['avg_reviews'].round(0), textposition='outside',
+            textfont=dict(color='#A6B4C8', size=10),
+        ))
+        fig = apply_layout(fig, height=240)
+        fig.update_xaxes(tickangle=-15)
+        fig.update_yaxes(title='Avg Reviews')
+        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with c4:
+        section_header("Executive Business Insight", "AI-Generated Branding Intelligence")
+        st.markdown(
+            insight_html("🌿 Nature Branding Outperformance",
+                f"Hotel dengan nama bertema alam menghasilkan <strong style='color:#22C55E'>{lift:.0f}% lebih banyak ulasan</strong> "
+                "dibanding kompetitor standar — proksi langsung demand & occupancy lebih tinggi.", 'success') +
+            insight_html("👑 Premium Naming Strategy",
+                "Hotel premium yang menggabungkan tema alam dengan kualitas (mis. 'Komodo Resort & Spa') "
+                "mencapai 2.3x kecepatan review vs naming generik.", 'info') +
+            insight_html("💡 Rekomendasi Strategis",
+                "Investasi baru wajib mengintegrasikan elemen alam destinasi ke identitas brand — "
+                "terutama di Raja Ampat, Wakatobi, dan Morotai.", 'warning'),
+            unsafe_allow_html=True
+        )
+
+
+# ════════════════════════════════════════════════════════════════════
+# PAGE 6 — INVESTMENT INTELLIGENCE
+# ════════════════════════════════════════════════════════════════════
+
+def page_investment():
+    page_header("Investment Intelligence", "Investment Decision Engine · Opportunity Ranking & Risk Assessment", "💰")
+
+    hi_opp  = df[df['opportunity_score'] >= 75] if 'opportunity_score' in df.columns else pd.DataFrame()
+    emg     = df[(df['opportunity_score'] >= 55) & (df['opportunity_score'] < 75)] if 'opportunity_score' in df.columns else pd.DataFrame()
+    sat     = df[df['competition_score'] >= 75] if 'competition_score' in df.columns else pd.DataFrame()
+
+    k1,k2,k3,k4 = st.columns(4)
+    for col,(lbl,val,sub,clr) in zip([k1,k2,k3,k4],[
+        ("High Priority Targets", f"{len(hi_opp):,}",                                       "Opportunity ≥ 75", 'success'),
+        ("Emerging Opportunities",f"{len(emg):,}",                                           "Score 55–75",      'accent'),
+        ("Saturated Markets",     f"{len(sat):,}",                                           "Competition ≥ 75%",'danger'),
+        ("Avg IIA Score",         f"{df['investor_interest_index'].mean():.1f}",             "National Composite",'warning'),
+    ]):
+        with col:
+            st.markdown(kpi_card(lbl, val, sub, clr, icon='💰'), unsafe_allow_html=True)
+
+    spacer(20)
+
+    c1, c2 = st.columns(2)
+    with c1:
+        section_header("Opportunity Ranking by Destination", "By Investor Interest Index")
+        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+        fig = plot_opportunity_ranking(dest_stats, 'avg_iia', '')
+        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with c2:
         section_header("Opportunity Quadrant Matrix", "Investment Strategy Positioning")
+        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
         fig = plot_investment_matrix(dest_stats)
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    
-    st.markdown("<div style='margin-top:12px'></div>", unsafe_allow_html=True)
-    
-    # Investment hotel table
-    section_header("Investment Opportunity Ranking", "Top Hotels by Opportunity + Investor Interest Index")
-    
-    tab_all, tab_high, tab_emerging, tab_saturated = st.tabs(["All", "High Priority", "Emerging", "Saturated"])
-    
-    for tab, tab_df, label in [
-        (tab_all, df, 'all'),
-        (tab_high, high_opp, 'high'),
-        (tab_emerging, emerging, 'emerging'),
-        (tab_saturated, saturated, 'sat'),
-    ]:
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    spacer(14)
+
+    section_header("Investment Opportunity Ranking", "Top Hotels · Opportunity + IIA Score")
+    t_all, t_hi, t_emg, t_sat = st.tabs(["All","High Priority","Emerging","Saturated"])
+
+    for tab, tdf, _ in [(t_all,df,'all'),(t_hi,hi_opp,'hi'),(t_emg,emg,'emg'),(t_sat,sat,'sat')]:
         with tab:
-            if tab_df is None or len(tab_df) == 0:
-                st.info("No data for this category.")
+            if tdf is None or len(tdf) == 0:
+                st.info("Tidak ada data untuk kategori ini.")
                 continue
-            
-            display_df = tab_df.nlargest(min(20, len(tab_df)), 'opportunity_score')[
-                ['nama_hotel', 'destinasi', 'jenis', 'rating', 'jumlah_ulasan',
-                 'opportunity_score', 'investor_interest_index', 'competition_score',
-                 'ecosystem_score', 'rekomendasi_investasi']
-            ].copy()
-            
-            # Style the dataframe
-            for _, row in display_df.head(10).iterrows():
+            show = tdf.nlargest(min(10, len(tdf)), 'opportunity_score')
+            for _, row in show.iterrows():
                 rec = str(row.get('rekomendasi_investasi', ''))
-                rec_color = '#22C55E' if 'Highly' in rec else '#3B82F6' if 'Recommended' == rec else '#F59E0B' if 'Further' in rec else '#EF4444'
-                badge_class = 'badge-high' if 'Highly' in rec else 'badge-medium' if 'Recommended' == rec else 'badge-low' if 'Further' in rec else 'badge-avoid'
-                
-                st.markdown(f"""
-                <div class="hotel-item">
-                    <div class="hotel-info">
-                        <div class="hotel-name">{row.get('nama_hotel','Hotel')}</div>
-                        <div class="hotel-meta">📍 {row.get('destinasi','')} · {row.get('jenis','')} · ⭐{row.get('rating',0):.1f} · {int(row.get('jumlah_ulasan',0)):,} reviews</div>
-                    </div>
-                    <div style="text-align:center;flex-shrink:0;padding:0 12px;">
-                        <div style="font-size:10px;color:#A6B4C8;">Opp</div>
-                        <div style="font-size:18px;font-weight:800;color:#22C55E;">{row.get('opportunity_score',0):.0f}</div>
-                    </div>
-                    <div style="text-align:center;flex-shrink:0;padding:0 8px;">
-                        <div style="font-size:10px;color:#A6B4C8;">IIA</div>
-                        <div style="font-size:18px;font-weight:800;color:#00D4FF;">{row.get('investor_interest_index',0):.0f}</div>
-                    </div>
-                    <div style="flex-shrink:0;">
-                        <span class="badge {badge_class}">{rec[:15]}</span>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-    
-    st.markdown("<div style='margin-top:16px'></div>", unsafe_allow_html=True)
-    
-    col3, col4 = st.columns(2)
-    
-    with col3:
-        section_header("Undersupply Zones", "High Demand · Low Supply Detected")
-        if not dest_stats.empty:
-            for _, row in dest_stats[dest_stats['supply_status'].isin(['Undersupply', 'Emerging'])].iterrows():
-                n = row.get('n_hotels', 0)
-                demand = row.get('avg_demand', 0)
-                st.markdown(f"""
-                <div class="alert-item opportunity">
-                    <div class="alert-icon">📈</div>
-                    <div class="alert-content">
-                        <h5>{row['dest_display']} — UNDERSUPPLY</h5>
-                        <p>Supply: <strong style="color:#EF4444">{n} hotels</strong> · Demand: <strong style="color:#22C55E">{demand:.0f}%</strong></p>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-    
-    with col4:
+                bc  = 'badge-high' if 'Highly' in rec else 'badge-medium' if rec=='Recommended' else 'badge-low' if 'Further' in rec else 'badge-avoid'
+                st.markdown(
+                    f'<div class="hotel-item">'
+                    f'  <div style="width:42px;height:42px;border-radius:8px;background:rgba(0,212,255,0.08);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🏨</div>'
+                    f'  <div class="hotel-info">'
+                    f'    <div class="hotel-name">{row.get("nama_hotel","Hotel")}</div>'
+                    f'    <div class="hotel-meta">📍 {row.get("destinasi","")} · {row.get("jenis","")} · ⭐{row.get("rating",0):.1f} · {int(row.get("jumlah_ulasan",0)):,} reviews</div>'
+                    f'  </div>'
+                    f'  <div style="text-align:center;padding:0 10px;flex-shrink:0;">'
+                    f'    <div style="font-size:9px;color:#64748B;">Opp</div>'
+                    f'    <div style="font-size:17px;font-weight:800;color:#22C55E;">{row.get("opportunity_score",0):.0f}</div>'
+                    f'  </div>'
+                    f'  <div style="text-align:center;padding:0 8px;flex-shrink:0;">'
+                    f'    <div style="font-size:9px;color:#64748B;">IIA</div>'
+                    f'    <div style="font-size:17px;font-weight:800;color:#00D4FF;">{row.get("investor_interest_index",0):.0f}</div>'
+                    f'  </div>'
+                    f'  <span class="badge {bc}" style="flex-shrink:0;">{rec[:12]}</span>'
+                    f'</div>',
+                    unsafe_allow_html=True
+                )
+
+    spacer(14)
+    c3, c4 = st.columns(2)
+    with c3:
+        section_header("Undersupply Zones", "High Demand · Low Supply")
+        for _, row in dest_stats[dest_stats['supply_status'].isin(['Undersupply','Emerging'])].iterrows():
+            st.markdown(
+                f'<div class="alert-item opportunity">'
+                f'  <div class="alert-icon">📈</div>'
+                f'  <div class="alert-content">'
+                f'    <h5>{row["dest_display"]} — UNDERSUPPLY</h5>'
+                f'    <p>Supply: <strong style="color:#EF4444">{row.get("n_hotels",0)} hotels</strong> · '
+                f'Demand: <strong style="color:#22C55E">{row.get("avg_demand",0):.0f}%</strong></p>'
+                f'  </div>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
+    with c4:
         section_header("Oversaturated Zones", "Caution — High Competition Risk")
-        if not dest_stats.empty:
-            for _, row in dest_stats[dest_stats['supply_status'] == 'Oversupply'].iterrows():
-                comp = row.get('avg_competition', 0)
-                st.markdown(f"""
-                <div class="alert-item critical">
-                    <div class="alert-icon">⚠️</div>
-                    <div class="alert-content">
-                        <h5>{row['dest_display']} — SATURATED</h5>
-                        <p>Competition: <strong style="color:#EF4444">{comp:.0f}%</strong> · Avoid mid-range entry</p>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-    
-    # Explainable AI panel
-    st.markdown("<div style='margin-top:16px'></div>", unsafe_allow_html=True)
-    section_header("Explainable Investment Recommendation", "AI Reasoning Engine")
-    
-    if not high_opp.empty:
-        top_hotel = high_opp.nlargest(1, 'opportunity_score').iloc[0]
-        rec = top_hotel.get('rekomendasi_investasi', 'Recommended')
-        st.markdown(f"""
-        <div class="insight-card success">
-            <div class="insight-title">🤖 AI RECOMMENDATION — {top_hotel.get('nama_hotel','Top Hotel')[:40]}</div>
-            <div class="insight-body">
-                This property in <strong style="color:#00D4FF">{top_hotel.get('destinasi','')}</strong> is 
-                <strong style="color:#22C55E">{rec}</strong> due to:
-                <br>• Opportunity Score: <strong style="color:#22C55E">{top_hotel.get('opportunity_score',0):.0f}/100</strong> (Top Tier)
-                <br>• Ecosystem Score: <strong style="color:#00D4FF">{top_hotel.get('ecosystem_score',0):.0f}/100</strong> — High attraction accessibility
-                <br>• Competition Score: <strong style="color:#22C55E">{top_hotel.get('competition_score',0):.0f}</strong> — Low local competition pressure
-                <br>• Nearest Attraction: <strong style="color:#A6B4C8">{top_hotel.get('nama_atraksi_terdekat','N/A')}</strong>
-                <br>• Investor Interest Index: <strong style="color:#F59E0B">{top_hotel.get('investor_interest_index',0):.0f}/100</strong>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        for _, row in dest_stats[dest_stats['supply_status'] == 'Oversupply'].iterrows():
+            st.markdown(
+                f'<div class="alert-item critical">'
+                f'  <div class="alert-icon">⚠️</div>'
+                f'  <div class="alert-content">'
+                f'    <h5>{row["dest_display"]} — SATURATED</h5>'
+                f'    <p>Competition: <strong style="color:#EF4444">{row.get("avg_competition",0):.0f}%</strong> · Hindari entry mid-range</p>'
+                f'  </div>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
+
+    spacer(14)
+    if not hi_opp.empty:
+        top = hi_opp.nlargest(1,'opportunity_score').iloc[0]
+        rec = top.get('rekomendasi_investasi','Recommended')
+        st.markdown(insight_html(
+            f"🤖 AI RECOMMENDATION — {top.get('nama_hotel','Top Hotel')[:40]}",
+            f"Properti di <strong style='color:#00D4FF'>{top.get('destinasi','')}</strong> adalah "
+            f"<strong style='color:#22C55E'>{rec}</strong> karena: "
+            f"Opp {top.get('opportunity_score',0):.0f}/100 · "
+            f"Ecosystem {top.get('ecosystem_score',0):.0f}/100 · "
+            f"Competition rendah {top.get('competition_score',0):.0f} · "
+            f"IIA {top.get('investor_interest_index',0):.0f}/100",
+            'success'
+        ), unsafe_allow_html=True)
 
 
-# ===================================================================
-# PAGE 7: SPATIAL ECONOMETRIC INTELLIGENCE
-# ===================================================================
+# ════════════════════════════════════════════════════════════════════
+# PAGE 7 — SPATIAL ECONOMETRICS
+# ════════════════════════════════════════════════════════════════════
+
 def page_econometrics():
-    page_header("Spatial Econometric Intelligence", "GWR Analysis · Spatial Autocorrelation · Local Coefficient Heatmaps", "📐")
-    
-    # Moran's I simulation
-    moran_results = get_moran_i_simulation(df)
-    
+    page_header("Spatial Econometric Intelligence", "GWR Analysis · Spatial Autocorrelation · Local Coefficient Maps", "📐")
+
+    moran = get_moran_i_simulation(df)
     section_header("Moran's I Spatial Autocorrelation", "Global Spatial Dependency Test")
-    
-    m_cols = st.columns(len(moran_results))
-    for col, (var, result) in zip(m_cols, moran_results.items()):
+
+    m_cols = st.columns(len(moran))
+    for col, (var, res) in zip(m_cols, moran.items()):
         with col:
-            fig = plot_morans_result(result['I'], result['z_score'], result['p_value'],
-                                     var.replace('avg_', '').replace('_', ' ').title())
+            st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:10px 8px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+            fig = plot_morans_result(res['I'], res['z_score'], res['p_value'],
+                                     var.replace('_score','').replace('_',' ').title())
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-            sig = "✅ Significant" if result['p_value'] < 0.05 else "⚠️ Not Significant"
-            st.markdown(f"""
-            <div style="text-align:center;font-size:11px;color:#A6B4C8;margin-top:-10px;">
-                Pattern: <strong style="color:#00D4FF">{result['interpretation']}</strong> · {sig} (p={result['p_value']:.4f})
-            </div>
-            """, unsafe_allow_html=True)
-    
-    st.markdown("<div style='margin-top:20px'></div>", unsafe_allow_html=True)
-    
+            sig = "✅ Significant" if res['p_value'] < 0.05 else "⚠️ Not Sig"
+            st.markdown(
+                f'<div style="text-align:center;font-size:10px;color:#A6B4C8;padding-bottom:6px;">'
+                f'  <strong style="color:#00D4FF">{res["interpretation"]}</strong> · {sig}'
+                f'</div>',
+                unsafe_allow_html=True
+            )
+            st.markdown('</div>', unsafe_allow_html=True)
+
+    spacer(20)
     section_header("GWR Local Coefficient Heatmaps", "Spatial Heterogeneity in Parameter Estimates")
-    
-    coef_cols = [
-        ('koef_jarak_ke_pusat_km', 'Distance to City Center'),
-        ('koef_saingan_radius_1km', 'Competitor Density'),
-        ('koef_jarak_ke_atraksi_terdekat_km', 'Distance to Attraction'),
-        ('koef_jumlah_atraksi_radius_5km', 'Attraction Density'),
+
+    coef_map = [
+        ('koef_jarak_ke_pusat_km',          'Distance to City Center'),
+        ('koef_saingan_radius_1km',          'Competitor Density'),
+        ('koef_jarak_ke_atraksi_terdekat_km','Distance to Attraction'),
+        ('koef_jumlah_atraksi_radius_5km',   'Attraction Density'),
     ]
-    
-    available_coefs = [(c, l) for c, l in coef_cols if c in df.columns]
-    
-    coef_tab_labels = [l for _, l in available_coefs]
-    if coef_tab_labels:
-        coef_tabs = st.tabs(coef_tab_labels)
-        for tab, (coef_col, coef_label) in zip(coef_tabs, available_coefs):
+    avail = [(c, l) for c, l in coef_map if c in df.columns]
+
+    if avail:
+        ctabs = st.tabs([l for _, l in avail])
+        for tab, (coef_col, coef_lbl) in zip(ctabs, avail):
             with tab:
-                col_map, col_stats = st.columns([2, 1])
-                with col_map:
-                    fig = plot_gwr_coefficients(df, coef_col, f'GWR: {coef_label}')
+                cm, cs = st.columns([2, 1])
+                with cm:
+                    st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+                    fig = plot_gwr_coefficients(df, coef_col, f'GWR: {coef_lbl}')
                     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-                
-                with col_stats:
-                    coef_data = df[coef_col].dropna()
-                    st.markdown(f"""
-                    <div class="econ-card">
-                        <div style="font-size:11px;color:#A6B4C8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Coefficient Statistics</div>
-                        <div class="metric-row"><span class="metric-name">Mean</span><span class="metric-val {'coef-positive' if coef_data.mean() >= 0 else 'coef-negative'}">{coef_data.mean():.4f}</span></div>
-                        <div class="metric-row"><span class="metric-name">Median</span><span class="metric-val">{coef_data.median():.4f}</span></div>
-                        <div class="metric-row"><span class="metric-name">Std Dev</span><span class="metric-val">{coef_data.std():.4f}</span></div>
-                        <div class="metric-row"><span class="metric-name">Min</span><span class="metric-val coef-negative">{coef_data.min():.4f}</span></div>
-                        <div class="metric-row"><span class="metric-name">Max</span><span class="metric-val coef-positive">{coef_data.max():.4f}</span></div>
-                        <div class="metric-row"><span class="metric-name">% Positive</span><span class="metric-val coef-positive">{(coef_data > 0).mean()*100:.1f}%</span></div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # Business interpretation
-                    is_positive = coef_data.mean() >= 0
+                    st.markdown('</div>', unsafe_allow_html=True)
+                with cs:
+                    cd = df[coef_col].dropna()
+                    pos = cd.mean() >= 0
                     if 'saingan' in coef_col:
-                        interpretation = "Agglomeration effect dominates — competitor clustering increases overall tourism traffic." if is_positive else "Destructive competition — new entrants face cannibalization from existing operators."
-                        interpretation_color = '#22C55E' if is_positive else '#EF4444'
-                    elif 'atraksi' in coef_col and 'jumlah' in coef_col:
-                        interpretation = "Higher attraction density positively drives hotel demand — ecosystem-rich areas show stronger performance." if is_positive else "Attraction density beyond threshold shows diminishing returns — over-tourism risk."
-                        interpretation_color = '#22C55E' if is_positive else '#F59E0B'
-                    elif 'jarak_ke_atraksi' in coef_col:
-                        interpretation = "Hotels farther from attractions perform better — suggests untapped markets near secondary sites." if is_positive else "Proximity to attractions is critical — close locations outperform distant ones significantly."
-                        interpretation_color = '#F59E0B' if is_positive else '#00D4FF'
+                        interp = ("Efek aglomerasi dominan — clustering meningkatkan traffic wisata." if pos
+                                  else "Kompetisi destruktif — entrant baru mengalami kanibalisasi.")
+                        ic = '#22C55E' if pos else '#EF4444'
+                    elif 'jumlah_atraksi' in coef_col:
+                        interp = ("Kepadatan atraksi tinggi = driver demand hotel positif." if pos
+                                  else "Di atas threshold, atraksi terlalu padat → diminishing returns.")
+                        ic = '#22C55E' if pos else '#F59E0B'
                     else:
-                        interpretation = "Positive spatial effect detected — factor improves accommodation performance." if is_positive else "Negative spatial effect — inverse relationship with hotel performance."
-                        interpretation_color = '#22C55E' if is_positive else '#EF4444'
-                    
-                    st.markdown(f"""
-                    <div class="insight-card" style="margin-top:8px;">
-                        <div class="insight-title">📊 Business Interpretation</div>
-                        <div class="insight-body" style="color:{interpretation_color};">{interpretation}</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-    
-    st.markdown("<div style='margin-top:20px'></div>", unsafe_allow_html=True)
-    
-    # GWR vs OLS comparison
-    section_header("GWR vs OLS Model Comparison", "Local vs Global Model Performance")
-    
-    if 'r2_lokal' in df.columns and 'model_dipakai' in df.columns:
-        col_gwr, col_ols = st.columns(2)
-        
-        with col_gwr:
-            gwr_r2 = df[df['model_dipakai'].str.contains('GWR', na=False)]['r2_lokal'].mean()
-            ols_r2 = df[df['model_dipakai'].str.contains('OLS', na=False)]['r2_lokal'].mean()
-            
-            fig = go.Figure()
-            models = ['GWR (Local)', 'OLS (Global)']
-            r2_vals = [gwr_r2 if not np.isnan(gwr_r2) else 0.42,
-                       ols_r2 if not np.isnan(ols_r2) else 0.28]
-            colors = ['#00D4FF', '#3B82F6']
-            
-            fig.add_trace(go.Bar(
-                x=models, y=r2_vals,
-                marker=dict(color=colors, opacity=0.85),
-                text=[f'R² = {v:.3f}' for v in r2_vals],
-                textposition='outside',
-                textfont=dict(color='#FFFFFF', size=12, family='Inter'),
-            ))
-            fig = apply_layout(fig, title='Model R² Comparison', height=240)
-            fig.update_yaxes(range=[0, 0.8], title='R² (Goodness of Fit)')
-            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        
-        with col_ols:
-            st.markdown("""
-            <div class="econ-card">
-                <div style="font-size:11px;color:#A6B4C8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Model Selection Rationale</div>
-                <div class="insight-body">
-                    GWR outperforms global OLS by capturing <strong style="color:#00D4FF">spatial heterogeneity</strong> — 
-                    the same variable can have opposing effects in different destinations. 
-                    For example, competitor proximity is a positive agglomeration factor in 
-                    Mandalika (MotoGP tourism cluster) but destructive in oversaturated Bromo budget zones.
-                    <br><br>
-                    Local R² values above 0.4 confirm that GWR explanatory power varies spatially — 
-                    validating the use of spatially-weighted regression over traditional OLS for this dataset.
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+                        interp = ("Faktor spasial positif terdeteksi." if pos
+                                  else "Hubungan terbalik dengan performa hotel.")
+                        ic = '#22C55E' if pos else '#EF4444'
+
+                    st.markdown(
+                        f'<div class="econ-card">'
+                        f'  <div style="font-size:9px;color:#64748B;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Coefficient Stats</div>'
+                        + ''.join([
+                            f'<div class="metric-row"><span class="metric-name">{n}</span>'
+                            f'<span class="metric-val {"coef-positive" if v>=0 else "coef-negative"}">{v}</span></div>'
+                            for n, v in [("Mean", f"{cd.mean():.4f}"), ("Median", f"{cd.median():.4f}"),
+                                         ("Std Dev", f"{cd.std():.4f}"), ("Min", f"{cd.min():.4f}"),
+                                         ("Max", f"{cd.max():.4f}"), ("% Positive", f"{(cd>0).mean()*100:.1f}%")]
+                        ])
+                        + f'</div>',
+                        unsafe_allow_html=True
+                    )
+                    spacer(8)
+                    st.markdown(insight_html("📊 Business Interpretation", interp, 'info' if pos else 'warning'),
+                                unsafe_allow_html=True)
+
+    spacer(20)
+    section_header("GWR vs OLS Model Comparison", "Local vs Global Goodness of Fit")
+    cg, co = st.columns(2)
+    with cg:
+        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+        gwr_r2 = df[df['model_dipakai'].str.contains('GWR',na=False)]['r2_lokal'].mean() if 'model_dipakai' in df.columns else 0.42
+        ols_r2 = df[df['model_dipakai'].str.contains('OLS',na=False)]['r2_lokal'].mean() if 'model_dipakai' in df.columns else 0.28
+        r2_v = [gwr_r2 if not np.isnan(gwr_r2) else 0.42, ols_r2 if not np.isnan(ols_r2) else 0.28]
+        fig = go.Figure(go.Bar(
+            x=['GWR (Local)','OLS (Global)'], y=r2_v,
+            marker=dict(color=['#00D4FF','#3B82F6'], opacity=0.85),
+            text=[f'R² = {v:.3f}' for v in r2_v], textposition='outside',
+            textfont=dict(color='#FFFFFF', size=12),
+        ))
+        fig = apply_layout(fig, height=220)
+        fig.update_yaxes(range=[0,0.8], title='R² (Goodness of Fit)')
+        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+        st.markdown('</div>', unsafe_allow_html=True)
+    with co:
+        st.markdown(insight_html(
+            "Model Selection Rationale",
+            "GWR mengungguli OLS global karena menangkap <strong style='color:#00D4FF'>heterogenitas spasial</strong> — "
+            "variabel yang sama bisa memiliki efek berlawanan di destinasi berbeda. "
+            "Contoh: kedekatan kompetitor adalah faktor aglomerasi positif di Mandalika, "
+            "namun destruktif di zona Bromo yang jenuh.",
+            'info'
+        ), unsafe_allow_html=True)
 
 
-# ===================================================================
-# PAGE 8: DESTINATION DEEP DIVE
-# ===================================================================
+# ════════════════════════════════════════════════════════════════════
+# PAGE 8 — DESTINATION DEEP DIVE
+# ════════════════════════════════════════════════════════════════════
+
 def page_destination():
     from functions.maps import render_destination_map
     from streamlit_folium import st_folium
-    
+
     page_header("Destination Deep Dive", "Per-Destination Analytics · Investment Intelligence by Location", "🔍")
-    
-    # Destination selector
-    all_dests_dd = sorted(df_raw['destinasi'].dropna().unique().tolist())
-    selected_dest = st.selectbox("📍 Select Destination", all_dests_dd, key='dest_dd')
-    
-    dest_df = df_raw[df_raw['destinasi'] == selected_dest].copy()
-    
-    if dest_df.empty:
-        st.warning("No data available for selected destination.")
+
+    all_dd = sorted(df_raw['destinasi'].dropna().unique().tolist())
+    sel    = st.selectbox("📍 Pilih Destinasi", all_dd, key='dest_dd')
+    d_df   = df_raw[df_raw['destinasi'] == sel].copy()
+
+    if d_df.empty:
+        st.warning("Data tidak tersedia untuk destinasi ini.")
         return
-    
-    # Destination type label
+
     dest_types = {
-        'Labuan Bajo': 'Premium Nature & Diving · Komodo & Marine',
-        'Raja Ampat': 'Eco-Luxury Diving · Coral Triangle',
-        'Wakatobi': 'Luxury Diving · Banda Sea',
-        'Morotai': 'History & Diving · WWII Heritage',
-        'Mandalika': 'Sports & Beach · MotoGP Circuit',
-        'Borobudur': 'UNESCO Heritage · Cultural Tourism',
-        'Bromo Tengger Semeru': 'Volcanic Adventure · Mountain Tourism',
-        'Danau Toba': 'Nature & Culture · Lake Ecosystem',
-        'Likupang': 'Beach & Marine · KEK Development',
-        'Tanjung Kelayang': 'Granite Beach · Belitung Island',
+        'Labuan Bajo':'Premium Nature & Diving · Komodo', 'Raja Ampat':'Eco-Luxury Diving · Coral Triangle',
+        'Wakatobi':'Luxury Diving · Banda Sea', 'Morotai':'History & Diving · WWII Heritage',
+        'Mandalika':'Sports & Beach · MotoGP Circuit', 'Borobudur':'UNESCO Heritage · Cultural Tourism',
+        'Bromo Tengger Semeru':'Volcanic Adventure · Mountain Tourism', 'Danau Toba':'Nature & Culture · Lake Ecosystem',
+        'Likupang':'Beach & Marine · KEK Development', 'Tanjung Kelayang':'Granite Beach · Belitung',
     }
-    
-    dest_type = dest_types.get(selected_dest, 'Priority Tourism Destination')
-    
-    col_info, col_map = st.columns([1, 2.5])
-    
-    with col_info:
-        st.markdown(f"""
-        <div style="background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);border-radius:10px;padding:12px;margin-bottom:12px;">
-            <div style="font-size:16px;font-weight:700;color:#FFFFFF;margin-bottom:2px;">{selected_dest}</div>
-            <div style="font-size:11px;color:#00D4FF;">{dest_type}</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        kpi_list = [
-            ("Hotels", f"{len(dest_df):,}", "#00D4FF"),
-            ("Avg Rating", f"⭐ {dest_df['rating'].mean():.1f}", "#F59E0B"),
-            ("Competition", f"{dest_df['competition_score'].mean():.0f}%", "#EF4444"),
-            ("Demand Score", f"{dest_df['demand_score'].mean():.0f}%", "#22C55E"),
-            ("Opportunity", f"{dest_df['opportunity_score'].mean():.0f}", "#22C55E"),
-            ("Avg IIA", f"{dest_df['investor_interest_index'].mean():.0f}", "#F59E0B"),
-            ("Ecosystem", f"{dest_df['ecosystem_score'].mean():.0f}", "#3B82F6"),
-            ("Premium Ratio", f"{dest_df['is_premium'].mean()*100:.0f}%", "#A855F7"),
+
+    ci, cm = st.columns([1, 2.5])
+    with ci:
+        st.markdown(
+            f'<div style="background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.18);'
+            f'border-radius:10px;padding:12px;margin-bottom:10px;">'
+            f'  <div style="font-size:15px;font-weight:700;color:#FFF;margin-bottom:2px;">{sel}</div>'
+            f'  <div style="font-size:11px;color:#00D4FF;">{dest_types.get(sel,"Priority Destination")}</div>'
+            f'</div>',
+            unsafe_allow_html=True
+        )
+        kpi_items = [
+            ("Hotels",       f"{len(d_df):,}",                                    "#00D4FF"),
+            ("Avg Rating",   f"⭐ {d_df['rating'].mean():.1f}",                   "#F59E0B"),
+            ("Competition",  f"{d_df['competition_score'].mean():.0f}%",          "#EF4444"),
+            ("Demand Score", f"{d_df['demand_score'].mean():.0f}%",               "#22C55E"),
+            ("Opportunity",  f"{d_df['opportunity_score'].mean():.0f}",            "#22C55E"),
+            ("Avg IIA",      f"{d_df['investor_interest_index'].mean():.0f}",      "#F59E0B"),
+            ("Ecosystem",    f"{d_df['ecosystem_score'].mean():.0f}",              "#3B82F6"),
+            ("Premium Ratio",f"{d_df['is_premium'].mean()*100:.0f}%",             "#A855F7"),
         ]
-        
-        for label, val, color in kpi_list:
-            st.markdown(f"""
-            <div class="metric-row">
-                <span class="metric-name">{label}</span>
-                <span style="font-size:14px;font-weight:700;color:{color};">{val}</span>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    with col_map:
+        for lbl, val, clr in kpi_items:
+            st.markdown(
+                f'<div class="metric-row">'
+                f'  <span class="metric-name">{lbl}</span>'
+                f'  <span style="font-size:13px;font-weight:700;color:{clr};">{val}</span>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
+
+    with cm:
+        st.markdown('<div style="border:1px solid rgba(0,212,255,0.15);border-radius:12px;overflow:hidden;">', unsafe_allow_html=True)
         with st.spinner("Loading destination map..."):
-            m = render_destination_map(dest_df, selected_dest)
-            st_folium(m, height=320, use_container_width=True, returned_objects=[])
-    
-    st.markdown("<div style='margin-top:16px'></div>", unsafe_allow_html=True)
-    
-    # Tabs
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "📊 Supply Analysis", "⚔️ Competition", "📈 Demand & Popularity",
-        "🌿 Attraction Ecosystem", "💰 Investment Potential"
-    ])
-    
-    with tab1:
-        col_a, col_b = st.columns(2)
-        with col_a:
+            m = render_destination_map(d_df, sel)
+            st_folium(m, height=300, use_container_width=True, returned_objects=[])
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    spacer(14)
+    ta, tb, tc, td, te = st.tabs(["📊 Supply","⚔️ Competition","📈 Demand","🌿 Ecosystem","💰 Investment"])
+
+    with ta:
+        ca2, cb2 = st.columns(2)
+        with ca2:
             section_header("Hotel Type Distribution")
-            if 'jenis' in dest_df.columns:
-                type_counts = dest_df['jenis'].value_counts()
-                fig = plot_donut(type_counts.index.tolist(), type_counts.values.tolist())
+            st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+            if 'jenis' in d_df.columns:
+                tc_cnt = d_df['jenis'].value_counts()
+                fig = plot_donut(tc_cnt.index.tolist(), tc_cnt.values.tolist())
                 st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        
-        with col_b:
+            st.markdown('</div>', unsafe_allow_html=True)
+        with cb2:
             section_header("Star Rating Distribution")
-            if 'kasta_bintang' in dest_df.columns:
-                star_counts = dest_df['kasta_bintang'].value_counts()
-                fig = plot_donut(star_counts.index.tolist(), star_counts.values.tolist(),
-                                 colors=['#F59E0B', '#00D4FF', '#3B82F6', '#A6B4C8'])
+            st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+            if 'kasta_bintang' in d_df.columns:
+                sc_cnt = d_df['kasta_bintang'].value_counts()
+                fig = plot_donut(sc_cnt.index.tolist(), sc_cnt.values.tolist(),
+                                 colors=['#F59E0B','#00D4FF','#3B82F6','#A6B4C8'])
                 st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        
-        section_header(f"Hotel List — {selected_dest}")
-        top_hotels = dest_df.nlargest(min(8, len(dest_df)), 'opportunity_score')
-        for _, row in top_hotels.iterrows():
-            rec = str(row.get('rekomendasi_investasi', ''))
-            badge_class = 'badge-high' if 'Highly' in rec else 'badge-medium' if 'Recommended' == rec else 'badge-low' if 'Further' in rec else 'badge-avoid'
-            foto = row.get('foto_url', '')
-            img_html = f'<img src="{foto}" style="width:48px;height:48px;border-radius:6px;object-fit:cover;" onerror="this.style.display=\'none\'">' if foto else f'<div style="width:48px;height:48px;border-radius:6px;background:rgba(0,212,255,0.1);display:flex;align-items:center;justify-content:center;font-size:20px;">🏨</div>'
-            
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        section_header(f"Hotel List — {sel}")
+        for _, row in d_df.nlargest(min(6, len(d_df)), 'opportunity_score').iterrows():
+            rec = str(row.get('rekomendasi_investasi',''))
+            bc  = 'badge-high' if 'Highly' in rec else 'badge-medium' if rec=='Recommended' else 'badge-low' if 'Further' in rec else 'badge-avoid'
             price = row.get('harga', None)
-            price_str = f"Rp {int(price):,}" if price and not (isinstance(price, float) and np.isnan(price)) else "N/A"
-            
-            st.markdown(f"""
-            <div class="hotel-item">
-                {img_html}
-                <div class="hotel-info">
-                    <div class="hotel-name">{row.get('nama_hotel','')}</div>
-                    <div class="hotel-meta">{row.get('kasta_bintang','')} · {row.get('jenis','')} · {price_str}</div>
-                </div>
-                <div style="text-align:right;">
-                    <div style="font-size:10px;color:#A6B4C8;">opp: <span style="color:#22C55E;font-weight:700">{row.get('opportunity_score',0):.0f}</span></div>
-                    <div style="font-size:10px;color:#A6B4C8;">iia: <span style="color:#00D4FF;font-weight:700">{row.get('investor_interest_index',0):.0f}</span></div>
-                </div>
-                <span class="badge {badge_class}" style="flex-shrink:0;margin-left:8px;">{rec[:10]}</span>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    with tab2:
-        col_c, col_d = st.columns(2)
-        with col_c:
+            pstr  = f"Rp {int(price):,}" if price and not (isinstance(price,float) and np.isnan(price)) else 'N/A'
+            st.markdown(
+                f'<div class="hotel-item">'
+                f'  <div style="width:42px;height:42px;border-radius:8px;background:rgba(0,212,255,0.08);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🏨</div>'
+                f'  <div class="hotel-info">'
+                f'    <div class="hotel-name">{row.get("nama_hotel","")}</div>'
+                f'    <div class="hotel-meta">{row.get("kasta_bintang","")} · {row.get("jenis","")} · {pstr}</div>'
+                f'  </div>'
+                f'  <div style="text-align:right;flex-shrink:0;padding-right:10px;">'
+                f'    <div style="font-size:9px;color:#64748B;">opp <span style="color:#22C55E;font-weight:700">{row.get("opportunity_score",0):.0f}</span></div>'
+                f'    <div style="font-size:9px;color:#64748B;">iia <span style="color:#00D4FF;font-weight:700">{row.get("investor_interest_index",0):.0f}</span></div>'
+                f'  </div>'
+                f'  <span class="badge {bc}" style="flex-shrink:0;">{rec[:10]}</span>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
+
+    def hist_chart(col, color, title_x):
+        fig = go.Figure(go.Histogram(x=d_df[col].dropna(), nbinsx=15,
+                                     marker=dict(color=color, opacity=0.8, line=dict(width=0))))
+        fig = apply_layout(fig, height=240)
+        fig.update_xaxes(title=title_x)
+        fig.update_yaxes(title='Count')
+        return fig
+
+    with tb:
+        cc2, cd2 = st.columns(2)
+        with cc2:
             section_header("Competition Distribution")
-            fig = go.Figure(go.Histogram(
-                x=dest_df['competition_score'].dropna(),
-                nbinsx=15,
-                marker=dict(color='#EF4444', opacity=0.8, line=dict(width=0)),
-            ))
-            fig = apply_layout(fig, height=250)
-            fig.update_xaxes(title='Competition Score')
-            fig.update_yaxes(title='Count')
-            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        
-        with col_d:
+            st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+            st.plotly_chart(hist_chart('competition_score','#EF4444','Competition Score'), use_container_width=True, config={'displayModeBar':False})
+            st.markdown('</div>', unsafe_allow_html=True)
+        with cd2:
             section_header("Ocean Status Breakdown")
-            ocean_counts = dest_df['status_ocean'].value_counts()
-            labels = [l.split('(')[0].strip() for l in ocean_counts.index]
-            colors = ['#EF4444' if 'Red' in l else '#00D4FF' for l in ocean_counts.index]
-            fig = plot_donut(labels, ocean_counts.values.tolist(), colors=colors)
-            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    
-    with tab3:
-        col_e, col_f = st.columns(2)
-        with col_e:
+            st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+            oc = d_df['status_ocean'].value_counts()
+            lb = [l.split('(')[0].strip() for l in oc.index]
+            cc3 = ['#EF4444' if 'Red' in l else '#00D4FF' for l in oc.index]
+            st.plotly_chart(plot_donut(lb, oc.values.tolist(), colors=cc3), use_container_width=True, config={'displayModeBar':False})
+            st.markdown('</div>', unsafe_allow_html=True)
+
+    with tc:
+        ce2, cf2 = st.columns(2)
+        with ce2:
             section_header("Review Volume Distribution")
-            fig = go.Figure(go.Histogram(
-                x=dest_df['jumlah_ulasan'].dropna(),
-                nbinsx=20,
-                marker=dict(color='#00D4FF', opacity=0.8),
-            ))
-            fig = apply_layout(fig, height=250)
-            fig.update_xaxes(title='Review Count (Demand Proxy)')
-            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        
-        with col_f:
+            st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+            st.plotly_chart(hist_chart('jumlah_ulasan','#00D4FF','Review Count'), use_container_width=True, config={'displayModeBar':False})
+            st.markdown('</div>', unsafe_allow_html=True)
+        with cf2:
             section_header("Demand Score Distribution")
-            fig = go.Figure(go.Histogram(
-                x=dest_df['demand_score'].dropna(),
-                nbinsx=15,
-                marker=dict(color='#22C55E', opacity=0.8),
-            ))
-            fig = apply_layout(fig, height=250)
-            fig.update_xaxes(title='Demand Score')
-            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    
-    with tab4:
-        col_g, col_h = st.columns(2)
-        with col_g:
+            st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+            st.plotly_chart(hist_chart('demand_score','#22C55E','Demand Score'), use_container_width=True, config={'displayModeBar':False})
+            st.markdown('</div>', unsafe_allow_html=True)
+
+    with td:
+        cg2, ch2 = st.columns(2)
+        with cg2:
             section_header("Ecosystem Score Distribution")
-            fig = go.Figure(go.Histogram(
-                x=dest_df['ecosystem_score'].dropna(),
-                nbinsx=15,
-                marker=dict(color='#3B82F6', opacity=0.8),
-            ))
-            fig = apply_layout(fig, height=250)
-            fig.update_xaxes(title='Ecosystem Score')
-            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        
-        with col_h:
+            st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+            st.plotly_chart(hist_chart('ecosystem_score','#3B82F6','Ecosystem Score'), use_container_width=True, config={'displayModeBar':False})
+            st.markdown('</div>', unsafe_allow_html=True)
+        with ch2:
             section_header("Top Nearest Attractions")
-            if 'nama_atraksi_terdekat' in dest_df.columns:
-                attr_counts = dest_df['nama_atraksi_terdekat'].value_counts().head(8)
-                for attr, cnt in attr_counts.items():
-                    st.markdown(f"""
-                    <div class="metric-row">
-                        <span class="metric-name">🌿 {attr[:35]}</span>
-                        <span class="metric-val">{cnt} hotels</span>
-                    </div>
-                    """, unsafe_allow_html=True)
-    
-    with tab5:
-        col_i, col_j = st.columns(2)
-        with col_i:
-            section_header("Investment Opportunity Score")
-            fig = go.Figure(go.Histogram(
-                x=dest_df['opportunity_score'].dropna(),
-                nbinsx=15,
-                marker=dict(color='#22C55E', opacity=0.8),
-            ))
-            fig = apply_layout(fig, height=250)
-            fig.update_xaxes(title='Opportunity Score')
-            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        
-        with col_j:
-            section_header("Recommendation Category Breakdown")
-            rec_counts = dest_df['rekomendasi_investasi'].value_counts()
-            colors = []
-            for label in rec_counts.index:
-                if 'Highly' in str(label): colors.append('#22C55E')
-                elif 'Recommended' == str(label): colors.append('#3B82F6')
-                elif 'Further' in str(label): colors.append('#F59E0B')
-                else: colors.append('#EF4444')
-            fig = plot_donut(rec_counts.index.tolist(), rec_counts.values.tolist(), colors=colors)
-            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+            if 'nama_atraksi_terdekat' in d_df.columns:
+                for attr, cnt in d_df['nama_atraksi_terdekat'].value_counts().head(7).items():
+                    st.markdown(
+                        f'<div class="metric-row">'
+                        f'  <span class="metric-name">🌿 {str(attr)[:32]}</span>'
+                        f'  <span class="metric-val">{cnt} hotels</span>'
+                        f'</div>',
+                        unsafe_allow_html=True
+                    )
+
+    with te:
+        ci2, cj2 = st.columns(2)
+        with ci2:
+            section_header("Opportunity Score Distribution")
+            st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+            st.plotly_chart(hist_chart('opportunity_score','#22C55E','Opportunity Score'), use_container_width=True, config={'displayModeBar':False})
+            st.markdown('</div>', unsafe_allow_html=True)
+        with cj2:
+            section_header("Recommendation Breakdown")
+            st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+            rc_cnt = d_df['rekomendasi_investasi'].value_counts()
+            rc_clr = ['#22C55E' if 'Highly' in str(l) else '#3B82F6' if str(l)=='Recommended' else '#F59E0B' if 'Further' in str(l) else '#EF4444' for l in rc_cnt.index]
+            st.plotly_chart(plot_donut(rc_cnt.index.tolist(), rc_cnt.values.tolist(), colors=rc_clr), use_container_width=True, config={'displayModeBar':False})
+            st.markdown('</div>', unsafe_allow_html=True)
 
 
-# ===================================================================
-# PAGE 9: STRATEGIC RECOMMENDATIONS
-# ===================================================================
+# ════════════════════════════════════════════════════════════════════
+# PAGE 9 — STRATEGIC RECOMMENDATIONS
+# ════════════════════════════════════════════════════════════════════
+
 def page_strategy():
     page_header("Strategic Recommendation Center", "Executive Intelligence Report · Kemenparekraf Investment Strategy", "🎯")
-    
-    # Report header
-    st.markdown("""
-    <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(13,33,55,0.7);border:1px solid rgba(0,212,255,0.15);border-radius:12px;padding:16px 20px;margin-bottom:20px;">
-        <div>
-            <div style="font-size:16px;font-weight:700;color:#FFFFFF;">Strategic Intelligence Report</div>
-            <div style="font-size:12px;color:#A6B4C8;">Indonesia Tourism Investment · Jun 2025 · AI-Generated</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.2);border-radius:20px;padding:6px 14px;">
-            <div style="width:7px;height:7px;border-radius:50%;background:#22C55E;"></div>
-            <span style="font-size:11px;font-weight:700;color:#22C55E;">LIVE INTELLIGENCE</span>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    col_main, col_roadmap = st.columns([2.5, 1])
-    
-    with col_main:
-        # Destination comparison overview
+
+    st.markdown(
+        '<div style="display:flex;align-items:center;justify-content:space-between;'
+        'background:rgba(13,33,55,0.7);border:1px solid rgba(0,212,255,0.15);'
+        'border-radius:12px;padding:14px 18px;margin-bottom:18px;">'
+        '  <div>'
+        '    <div style="font-size:15px;font-weight:700;color:#FFF;">Strategic Intelligence Report</div>'
+        '    <div style="font-size:11px;color:#A6B4C8;">Indonesia Tourism Investment · Jun 2026 · AI-Generated</div>'
+        '  </div>'
+        '  <div style="display:flex;align-items:center;gap:6px;background:rgba(34,197,94,0.1);'
+        'border:1px solid rgba(34,197,94,0.2);border-radius:20px;padding:5px 12px;">'
+        '    <div style="width:6px;height:6px;border-radius:50%;background:#22C55E;'
+        'box-shadow:0 0 6px rgba(34,197,94,0.5);"></div>'
+        '    <span style="font-size:10px;font-weight:700;color:#22C55E;letter-spacing:0.5px;">LIVE INTELLIGENCE</span>'
+        '  </div>'
+        '</div>',
+        unsafe_allow_html=True
+    )
+
+    cm, cr = st.columns([2.5, 1])
+
+    with cm:
+        # Chart perbandingan destinasi
         section_header("Destination Comparison Overview", "Multi-Metric Intelligence")
-        metrics = ['avg_opportunity', 'avg_competition', 'avg_ecosystem', 'avg_demand', 'n_hotels']
-        available_m = [m for m in metrics if m in dest_stats.columns]
-        if len(available_m) >= 3:
-            fig = plot_grouped_bar(
-                dest_stats, 'dest_display',
-                [m for m in available_m if m in ['avg_opportunity', 'avg_competition', 'avg_ecosystem']],
-                labels=['Opportunity', 'Competition', 'Ecosystem'],
-                colors=[DESIGN['success'], DESIGN['danger'], DESIGN['accent']],
-                height=300
-            )
+        st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+        avail_m = [m for m in ['avg_opportunity','avg_competition','avg_ecosystem'] if m in dest_stats.columns]
+        if len(avail_m) >= 2:
+            fig = plot_grouped_bar(dest_stats, 'dest_display', avail_m,
+                                   labels=['Opportunity','Competition','Ecosystem'],
+                                   colors=[DESIGN['success'],DESIGN['danger'],DESIGN['accent']], height=280)
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        spacer(14)
+
         # National Overview
         with st.expander("🌐 National Overview — Macro Analysis", expanded=True):
-            st.markdown(f"""
-            <div class="strategy-card">
-                <div class="insight-title">Super-Priority Destination Program</div>
-                <div class="insight-body" style="margin-top:6px;">
-                    {dest_stats['dest_display'].nunique()} super-priority destinations show an average investment opportunity score of 
-                    <strong style="color:#22C55E">{dest_stats['avg_opportunity'].mean():.1f}</strong> — 
-                    well above the ASEAN benchmark of 62. Government infrastructure commitments across all sites are catalyzing private investment.
-                    <br><br>
-                    <span style="background:rgba(34,197,94,0.15);color:#22C55E;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;">+4.8% YoY</span>
-                </div>
-            </div>
-            <div class="strategy-card">
-                <div class="insight-title">Premium Accommodation Gap</div>
-                <div class="insight-body" style="margin-top:6px;">
-                    {df['is_premium'].mean()*100:.0f}% of stock is classified premium, but demand for luxury eco-resorts 
-                    significantly outpaces supply, particularly in Papua and Southeast Sulawesi. Opportunity delta estimated at Rp 2.8 trillion.
-                    <br><br>
-                    <span style="background:rgba(239,68,68,0.15);color:#EF4444;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;">HIGH PRIORITY</span>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-        
+            st.markdown(
+                f'<div class="strategy-card">'
+                f'  <div class="insight-title">Super-Priority Destination Program</div>'
+                f'  <div class="insight-body" style="margin-top:6px;">'
+                f'    {dest_stats["dest_display"].nunique()} super-priority destination dengan rata-rata '
+                f'    opportunity score <strong style="color:#22C55E">{dest_stats["avg_opportunity"].mean():.1f}</strong> — '
+                f'    di atas benchmark ASEAN 62. Komitmen infrastruktur pemerintah mengkatalisasi investasi swasta.'
+                f'    <br><br><span style="background:rgba(34,197,94,0.15);color:#22C55E;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;">+4.8% YoY</span>'
+                f'  </div>'
+                f'</div>'
+                f'<div class="strategy-card">'
+                f'  <div class="insight-title">Premium Accommodation Gap</div>'
+                f'  <div class="insight-body" style="margin-top:6px;">'
+                f'    {df["is_premium"].mean()*100:.0f}% stok diklasifikasikan premium, namun demand eco-resort mewah '
+                f'    jauh melampaui supply di Papua & Sulawesi Tenggara. Delta peluang ~Rp 2.8 triliun.'
+                f'    <br><br><span style="background:rgba(239,68,68,0.15);color:#EF4444;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;">HIGH PRIORITY</span>'
+                f'  </div>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
+
         # Oversupply
-        oversupply_dests = dest_stats[dest_stats['supply_status'] == 'Oversupply']
+        over_d = dest_stats[dest_stats['supply_status'] == 'Oversupply']
         with st.expander("⚠️ Oversupply Destinations — Risk Alert", expanded=True):
-            if not oversupply_dests.empty:
-                for _, row in oversupply_dests.iterrows():
-                    st.markdown(f"""
-                    <div class="strategy-card" style="border-left:3px solid #EF4444;">
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                            <span style="font-size:13px;font-weight:700;color:#FFFFFF;">{row['dest_display']} Mid-Range</span>
-                            <span class="badge badge-avoid">AVOID MID-RANGE</span>
-                        </div>
-                        <div class="insight-body">
-                            Competition score of {row['avg_competition']:.0f}% signals market saturation. New mid-range entrants face compressed margins. 
-                            Luxury and ultra-premium segments remain viable — consider premium pivot or exit strategy.
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+            if not over_d.empty:
+                for _, row in over_d.iterrows():
+                    st.markdown(
+                        f'<div class="strategy-card" style="border-left:3px solid #EF4444;">'
+                        f'  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">'
+                        f'    <span style="font-size:13px;font-weight:700;color:#FFF;">{row["dest_display"]} Mid-Range</span>'
+                        f'    <span class="badge badge-avoid">AVOID MID-RANGE</span>'
+                        f'  </div>'
+                        f'  <div class="insight-body">Competition {row["avg_competition"]:.0f}% = saturasi pasar. '
+                        f'Pivot ke segmen ultra-premium atau strategi exit.</div>'
+                        f'</div>',
+                        unsafe_allow_html=True
+                    )
             else:
-                st.info("No oversupply destinations detected in current filter.")
-        
+                st.info("Tidak ada destinasi oversupply dalam filter saat ini.")
+
         # Undersupply
-        undersupply_dests = dest_stats[dest_stats['supply_status'].isin(['Undersupply', 'Emerging'])]
+        under_d = dest_stats[dest_stats['supply_status'].isin(['Undersupply','Emerging'])]
         with st.expander("🚀 Undersupply Recommendations — Investment Priority", expanded=True):
-            if not undersupply_dests.empty:
-                for _, row in undersupply_dests.iterrows():
-                    st.markdown(f"""
-                    <div class="strategy-card" style="border-left:3px solid #22C55E;">
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                            <span style="font-size:13px;font-weight:700;color:#FFFFFF;">{row['dest_display']}</span>
-                            <span class="badge badge-high">PRIORITY INVEST</span>
-                        </div>
-                        <div class="insight-body">
-                            Critical undersupply detected — {row['n_hotels']:.0f} hotels serving {row['avg_demand']:.0f}% demand score. 
-                            First-mover advantage window currently open. Eco-premium positioning recommended.
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-        
-        # Theme strategies
-        strategy_tabs = st.tabs(["🌿 Eco-Tourism", "👑 Premium", "🏗️ Infrastructure", "🎯 Branding"])
-        
-        with strategy_tabs[0]:
-            st.markdown("""
-            <div class="strategy-card">
-                <div class="insight-title">Eco-Tourism Development Strategy</div>
-                <div class="insight-body">
-                    Raja Ampat, Wakatobi, and Morotai represent Indonesia's premier eco-luxury corridor. 
-                    Demand for sustainable accommodation outpaces supply by 3:1 in these markets. 
-                    Investment should target <strong style="color:#22C55E">eco-lodge clusters</strong> within 
-                    500m of primary dive sites, with carbon-neutral positioning targeting international eco-tourists.
-                </div>
-            </div>
-            <div class="strategy-card">
-                <div class="insight-title">Nature Branding Imperative</div>
-                <div class="insight-body">
-                    Hotels with nature-based naming generate 40%+ higher review volumes. All new eco-tourism 
-                    investments should incorporate destination-specific natural elements (e.g., "Raja Ampat Coral Lodge") 
-                    into brand identity from inception.
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with strategy_tabs[1]:
-            st.markdown("""
-            <div class="strategy-card">
-                <div class="insight-title">Premium Gap Opportunity</div>
-                <div class="insight-body">
-                    Danau Toba luxury tier is severely undersupplied despite significant government infrastructure 
-                    investment (Rp 4.2T committed). Positioning a 5-star lakefront resort as the anchor property 
-                    ahead of full infrastructure completion represents a <strong style="color:#22C55E">first-mover premium</strong>.
-                </div>
-            </div>
-            <div class="strategy-card">
-                <div class="insight-title">MICE + Sport Tourism Premium</div>
-                <div class="insight-body">
-                    Mandalika's MotoGP calendar creates 8–12 event windows per year with premium pricing potential. 
-                    Partnering with race event organizers for accommodation packages offers predictable high-margin revenue streams unavailable to standard hotel operators.
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with strategy_tabs[2]:
-            st.markdown("""
-            <div class="strategy-card">
-                <div class="insight-title">Infrastructure-Led Investment Sequencing</div>
-                <div class="insight-body">
-                    <strong style="color:#00D4FF">Phase 1 (Now):</strong> Secure land banking in Likupang and Morotai before government infrastructure activation drives land price appreciation 40–70%.<br><br>
-                    <strong style="color:#3B82F6">Phase 2 (12–24 months):</strong> Develop pre-opening sales strategy for Danau Toba as Tol Sumatra connectivity improves visitor accessibility.<br><br>
-                    <strong style="color:#A855F7">Phase 3 (3–5 years):</strong> Establish integrated tourism corridor connecting Raja Ampat → Wakatobi → Labuan Bajo as international dive circuit.
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with strategy_tabs[3]:
-            st.markdown("""
-            <div class="strategy-card">
-                <div class="insight-title">Destination Branding Architecture</div>
-                <div class="insight-body">
-                    Each destination requires a distinct positioning platform:<br>
-                    • <strong style="color:#22C55E">Raja Ampat:</strong> "Last Frontier of Biodiversity" — luxury conservation<br>
-                    • <strong style="color:#00D4FF">Wakatobi:</strong> "World's Best Dive Destination" — premium dive exclusive<br>
-                    • <strong style="color:#F59E0B">Morotai:</strong> "Pacific War Heritage + Marine Paradise" — history + nature<br>
-                    • <strong style="color:#3B82F6">Danau Toba:</strong> "Largest Caldera Lake · Batak Culture" — nature + culture<br>
-                    • <strong style="color:#A855F7">Mandalika:</strong> "Indonesia's New Sports Riviera" — event tourism
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    with col_roadmap:
+            for _, row in under_d.iterrows():
+                st.markdown(
+                    f'<div class="strategy-card" style="border-left:3px solid #22C55E;">'
+                    f'  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">'
+                    f'    <span style="font-size:13px;font-weight:700;color:#FFF;">{row["dest_display"]}</span>'
+                    f'    <span class="badge badge-high">PRIORITY INVEST</span>'
+                    f'  </div>'
+                    f'  <div class="insight-body">Undersupply kritis — {row.get("n_hotels",0):.0f} hotel melayani demand {row.get("avg_demand",0):.0f}%. '
+                    f'Window first-mover terbuka. Posisi eco-premium disarankan.</div>'
+                    f'</div>',
+                    unsafe_allow_html=True
+                )
+
+        # Strategy tabs
+        st1, st2, st3, st4 = st.tabs(["🌿 Eco-Tourism","👑 Premium","🏗️ Infrastructure","🎯 Branding"])
+        with st1:
+            st.markdown(
+                '<div class="strategy-card"><div class="insight-title">Eco-Tourism Development Strategy</div>'
+                '<div class="insight-body">Raja Ampat, Wakatobi, Morotai = koridor eco-luxury premier Indonesia. '
+                'Demand sustainable accommodation melampaui supply 3:1. Target <strong style="color:#22C55E">eco-lodge cluster</strong> '
+                'dalam 500m dari dive site utama, posisi carbon-neutral.</div></div>'
+                '<div class="strategy-card"><div class="insight-title">Nature Branding Imperative</div>'
+                '<div class="insight-body">Hotel dengan nama berbasis alam menghasilkan 40%+ ulasan lebih banyak. '
+                'Semua investasi baru wajib integrasikan elemen alam destinasi sejak brand inception.</div></div>',
+                unsafe_allow_html=True
+            )
+        with st2:
+            st.markdown(
+                '<div class="strategy-card"><div class="insight-title">Premium Gap Opportunity</div>'
+                '<div class="insight-body">Danau Toba tier luxury sangat undersupplied meski Rp 4.2T infrastruktur committed. '
+                'Posisi resort bintang 5 sebagai anchor property = <strong style="color:#22C55E">first-mover premium</strong>.</div></div>'
+                '<div class="strategy-card"><div class="insight-title">MICE + Sport Tourism</div>'
+                '<div class="insight-body">Kalender MotoGP Mandalika = 8–12 event windows/tahun dengan pricing premium. '
+                'Kemitraan dengan event organizer = revenue stream predictable.</div></div>',
+                unsafe_allow_html=True
+            )
+        with st3:
+            st.markdown(
+                '<div class="strategy-card"><div class="insight-title">Infrastructure-Led Investment Sequencing</div>'
+                '<div class="insight-body">'
+                '<strong style="color:#00D4FF">Phase 1 (Now):</strong> Land banking Likupang & Morotai sebelum harga tanah naik 40–70%.<br><br>'
+                '<strong style="color:#3B82F6">Phase 2 (12–24 bln):</strong> Pre-opening Danau Toba sejalan konektivitas Tol Sumatra.<br><br>'
+                '<strong style="color:#A855F7">Phase 3 (3–5 thn):</strong> Koridor Raja Ampat → Wakatobi → Labuan Bajo sebagai dive circuit internasional.'
+                '</div></div>',
+                unsafe_allow_html=True
+            )
+        with st4:
+            st.markdown(
+                '<div class="strategy-card"><div class="insight-title">Destination Branding Architecture</div>'
+                '<div class="insight-body">'
+                '• <strong style="color:#22C55E">Raja Ampat:</strong> "Last Frontier of Biodiversity"<br>'
+                '• <strong style="color:#00D4FF">Wakatobi:</strong> "World\'s Best Dive Destination"<br>'
+                '• <strong style="color:#F59E0B">Morotai:</strong> "Pacific War Heritage + Marine Paradise"<br>'
+                '• <strong style="color:#3B82F6">Danau Toba:</strong> "Largest Caldera Lake · Batak Culture"<br>'
+                '• <strong style="color:#A855F7">Mandalika:</strong> "Indonesia\'s Sports Riviera"'
+                '</div></div>',
+                unsafe_allow_html=True
+            )
+
+    with cr:
         section_header("Investor Strategy Roadmap", "Prioritized Action Timeline")
-        
-        # Short term
-        st.markdown("""
-        <div class="strategy-card">
-            <span class="strategy-timeline timeline-short">Short-term · 0–12 months</span>
-        """, unsafe_allow_html=True)
-        
-        for item in [
-            "Secure land banking in Likupang and Morotai before government infrastructure activation",
-            "Acquire existing premium resorts in Wakatobi — supply cap creates durable moat",
-            "Position boutique eco-lodge development adjacent to dive sites in Raja Ampat",
-            "Tender offer to existing Danau Toba 2–3 star assets for premium conversion",
+
+        for timeline_cls, label, color, items in [
+            ('timeline-short',  'Short-term · 0–12 bulan',  '#22C55E', [
+                "Land banking Likupang & Morotai sebelum infrastruktur aktif",
+                "Akuisisi resort premium Wakatobi — supply cap ciptakan moat",
+                "Boutique eco-lodge adjacent dive sites Raja Ampat",
+                "Tender aset 2–3 bintang Danau Toba untuk konversi premium",
+            ]),
+            ('timeline-medium', 'Medium-term · 1–3 tahun', '#3B82F6', [
+                "Ultra-premium dive resort Morotai — WWII + marine niche",
+                "Premium glamping dekat ridgeline Bromo",
+                "Lakefront luxury resort Danau Toba",
+                "Kemitraan MotoGP Mandalika untuk paket akomodasi",
+            ]),
+            ('timeline-long',   'Long-term · 3–7 tahun',   '#A855F7', [
+                "Koridor terintegrasi Raja Ampat → Wakatobi → Labuan Bajo",
+                "Eco-resort network 5 zona UNESCO undersupply",
+                "Indonesia Premium Tourism Exchange",
+            ]),
         ]:
-            st.markdown(f"""
-            <div class="strategy-item">
-                <div class="strategy-bullet"></div>
-                <span>{item}</span>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-        # Medium term
-        st.markdown("""
-        <div class="strategy-card">
-            <span class="strategy-timeline timeline-medium">Medium-term · 1–3 years</span>
-        """, unsafe_allow_html=True)
-        
-        for item in [
-            "Develop ultra-premium dive resort in Morotai targeting WWII + marine niche",
-            "Build premium glamping concept near Bromo viewing ridgelines",
-            "Develop Danau Toba lakefront luxury resort as government infrastructure activates",
-            "Partner with MotoGP operators for Mandalika race-event accommodation packages",
-        ]:
-            st.markdown(f"""
-            <div class="strategy-item">
-                <div class="strategy-bullet" style="background:#3B82F6;"></div>
-                <span>{item}</span>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-        # Long term
-        st.markdown("""
-        <div class="strategy-card">
-            <span class="strategy-timeline timeline-long">Long-term · 3–7 years</span>
-        """, unsafe_allow_html=True)
-        
-        for item in [
-            "Develop integrated tourism corridor connecting Raja Ampat → Wakatobi → Labuan Bajo",
-            "Build eco-resort network across 5 UNESCO-adjacent undersupply zones",
-            "Launch Indonesia Premium Tourism Exchange connecting eco-resorts to international markets",
-        ]:
-            st.markdown(f"""
-            <div class="strategy-item">
-                <div class="strategy-bullet" style="background:#A855F7;"></div>
-                <span>{item}</span>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-        # Risk matrix
-        st.markdown("""
-        <div class="strategy-card" style="margin-top:12px;">
-            <div class="insight-title">⚠️ Risk Matrix</div>
-            <div class="metric-row">
-                <span class="metric-name">Regulatory Risk</span>
-                <span class="badge badge-medium">Medium</span>
-            </div>
-            <div class="metric-row">
-                <span class="metric-name">FX Risk</span>
-                <span class="badge badge-medium">Medium</span>
-            </div>
-            <div class="metric-row">
-                <span class="metric-name">Infra Risk (Likupang)</span>
-                <span class="badge badge-high">Low</span>
-            </div>
-            <div class="metric-row">
-                <span class="metric-name">Saturation Risk (LB)</span>
-                <span class="badge badge-avoid">High</span>
-            </div>
-            <div class="metric-row">
-                <span class="metric-name">Climate Risk (Wakatobi)</span>
-                <span class="badge badge-low">Moderate</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+            st.markdown(
+                f'<div class="strategy-card">'
+                f'  <span class="strategy-timeline {timeline_cls}">{label}</span>',
+                unsafe_allow_html=True
+            )
+            for item in items:
+                st.markdown(
+                    f'<div class="strategy-item">'
+                    f'  <div class="strategy-bullet" style="background:{color};"></div>'
+                    f'  <span>{item}</span>'
+                    f'</div>',
+                    unsafe_allow_html=True
+                )
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        spacer(8)
+        st.markdown(
+            '<div class="strategy-card">'
+            '  <div class="insight-title">⚠️ Risk Matrix</div>'
+            + ''.join([
+                f'<div class="metric-row"><span class="metric-name">{n}</span><span class="badge {b}">{v}</span></div>'
+                for n, v, b in [
+                    ("Regulatory Risk","Medium","badge-low"),
+                    ("FX Risk","Medium","badge-low"),
+                    ("Infra Risk (Likupang)","Low","badge-high"),
+                    ("Saturation Risk (LB)","High","badge-avoid"),
+                    ("Climate Risk (Wakatobi)","Moderate","badge-medium"),
+                ]
+            ])
+            + '</div>',
+            unsafe_allow_html=True
+        )
 
 
-# ===================================================================
-# NEW PAGE: THE ANALYTICS ENGINE (MENGGABUNGKAN 4 ANALISIS)
-# ===================================================================
+# ════════════════════════════════════════════════════════════════════
+# PAGE ENGINE — ANALYTICS ENGINE (gabungan 4 sub-halaman)
+# ════════════════════════════════════════════════════════════════════
+
 def page_engine():
-    page_header("The Analytics Engine", "Behind the Scenes: Ekonometrika, NLP, & Ekosistem", "🧠")
-    
-    # Membungkus 4 fungsi halaman lama menjadi sub-tab
-    tab_comp, tab_eco, tab_nlp, tab_gwr = st.tabs([
-        "⚔️ Competition Intel", 
-        "🌿 Attraction Ecosystem", 
-        "💬 NLP Branding", 
-        "📐 Spatial Econometrics"
+    page_header("Analytics Engine", "Ekonometrika Spasial · NLP · Ekosistem · Kompetisi", "🧠")
+    t1, t2, t3, t4 = st.tabs([
+        "⚔️ Competition Intel",
+        "🌿 Attraction Ecosystem",
+        "💬 NLP Branding",
+        "📐 Spatial Econometrics",
     ])
-    
-    with tab_comp:
-        page_competition()
-    with tab_eco:
-        page_ecosystem()
-    with tab_nlp:
-        page_nlp()
-    with tab_gwr:
-        page_econometrics()
+    with t1: page_competition()
+    with t2: page_ecosystem()
+    with t3: page_nlp()
+    with t4: page_econometrics()
 
-# ===================================================================
+
+# ════════════════════════════════════════════════════════════════════
 # ROUTER
-# ===================================================================
-page_router = {
-    'executive': page_executive,
-    'spatial': page_spatial,
-    'destination': page_destination, # Halaman Deep Dive berdiri sendiri
-    'engine': page_engine,           # Halaman Engine gabungan
-    'investment': page_investment,
-    'strategy': page_strategy,
+# ════════════════════════════════════════════════════════════════════
+
+_PAGES = {
+    'executive':   page_executive,
+    'spatial':     page_spatial,
+    'destination': page_destination,
+    'engine':      page_engine,
+    'investment':  page_investment,
+    'strategy':    page_strategy,
 }
 
-current = st.session_state.get('current_page', 'executive')
-page_fn = page_router.get(current, page_executive)
-page_fn()
+current_page = st.session_state.get('current_page', 'executive')
+_PAGES.get(current_page, page_executive)()
