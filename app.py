@@ -71,22 +71,23 @@ def kpi_card(label, value, sub='', color='accent', trend=None, trend_dir='up', i
     if trend:
         arrow = '↑' if trend_dir == 'up' else '↓' if trend_dir == 'down' else '—'
         trend_html = (
-            f'<div style="position:absolute;top:12px;right:12px;font-size:10px;'
-            f'font-weight:700;padding:2px 8px;border-radius:20px;'
+            f'<div style="position:absolute;top:10px;right:10px;font-size:10px;'
+            f'font-weight:700;padding:2px 7px;border-radius:20px;'
             f'background:rgba(255,255,255,0.2);color:#FFFFFF;">{arrow} {trend}</div>'
         )
     return (
         f'<div style="background:{bg};border:none;border-radius:10px;'
-        f'padding:16px 18px;position:relative;'
+        f'padding:16px 16px 14px;position:relative;'
         f'box-shadow:0 4px 12px rgba(27,67,50,0.2);'
-        f'height:100%;overflow:hidden;">'
+        f'min-height:110px;box-sizing:border-box;overflow:hidden;">'  # ← min-height + box-sizing
         f'  {trend_html}'
         f'  <div style="font-size:10px;color:rgba(255,255,255,0.75);font-weight:600;'
-        f'text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">{label}</div>'
-        f'  <div style="font-size:26px;font-weight:800;color:#FFFFFF;line-height:1.1;'
-        f'font-family:Plus Jakarta Sans,sans-serif;">{value}</div>'
-        f'  <div style="font-size:11px;color:rgba(255,255,255,0.65);margin-top:8px;">{sub}</div>'
-        f'  <div style="position:absolute;bottom:-15px;right:-15px;width:70px;height:70px;'
+        f'text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">{label}</div>'
+        f'  <div style="font-size:24px;font-weight:800;color:#FFFFFF;line-height:1.1;'
+        f'font-family:Plus Jakarta Sans,sans-serif;word-break:break-word;">{value}</div>'
+        f'  <div style="font-size:11px;color:rgba(255,255,255,0.65);margin-top:6px;'
+        f'line-height:1.4;">{sub}</div>'
+        f'  <div style="position:absolute;bottom:-15px;right:-15px;width:65px;height:65px;'
         f'border-radius:50%;background:rgba(255,255,255,0.07);"></div>'
         f'</div>'
     )
@@ -494,11 +495,9 @@ def page_spatial():
         for col, lbl, val, clr in stats_items:
             with col:
                 st.markdown(
-                    f'<div style="background:#FFFFFF;border:1px solid #E2E8F0;'
-                    f'border-top:3px solid {clr};'
-                    f'border-radius:8px;padding:12px;text-align:center;margin-top:8px;">'
-                    f'  <div style="font-size:10px;color:#64748B;margin-bottom:4px;font-weight:500;">{lbl}</div>'
-                    f'  <div style="font-size:20px;font-weight:800;color:{clr};">{val}</div>'
+                    f'<div class="stats-card" style="border-top:3px solid {clr};">'
+                    f'  <div class="stats-card-label">{lbl}</div>'
+                    f'  <div class="stats-card-value" style="color:{clr};">{val}</div>'
                     f'</div>',
                     unsafe_allow_html=True
                 )
@@ -2161,7 +2160,7 @@ def page_strategy():
     spacer(24)
 
     # ── INVESTOR STRATEGY ROADMAP — 3 KOLOM SEJAJAR ──────────────
-    section_header("Peta Jalan Strategi Investasi", "Prioritas Tindakan Berdasarkan Horizon Waktu")
+    section_header("Strategi Investasi", "Prioritas Tindakan Berdasarkan Horizon Waktu")
     spacer(8)
 
     col_short, col_med, col_long = st.columns(3)
@@ -2229,23 +2228,24 @@ def page_strategy():
             items_html = ''
             for title, desc in r["items"]:
                 items_html += (
-                    f'<div style="display:flex;gap:10px;padding:10px 0;'
-                    f'border-top:1px solid {r["border"]}22;">'
-                    f'  <div>'
-                    f'    <div style="font-size:12px;font-weight:700;color:#1B4332;'
-                    f'margin-bottom:3px;">{title}</div>'
-                    f'    <div style="font-size:11px;color:#4A6080;line-height:1.5;">{desc}</div>'
-                    f'  </div>'
+                    f'<div style="padding:12px 0;border-top:1px solid {r["border"]}22;">'
+                    f'  <div style="font-size:12px;font-weight:700;color:#1B4332;'
+                    f'margin-bottom:4px;line-height:1.4;">{title}</div>'
+                    f'  <div style="font-size:11px;color:#4A6080;line-height:1.6;">{desc}</div>'
                     f'</div>'
                 )
             st.markdown(
                 f'<div style="background:{r["bg"]};border:1.5px solid {r["border"]};'
-                f'border-radius:12px;padding:14px 16px;">'
-                f'  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">'
-                f'    <div style="font-size:13px;font-weight:700;color:{r["color"]};">{r["label"]}</div>'
+                f'border-radius:12px;padding:16px;'
+                f'min-height:460px;box-sizing:border-box;">'   # ← min-height seragam
+                f'  <div style="display:flex;justify-content:space-between;'
+                f'align-items:center;margin-bottom:14px;">'
+                f'    <div style="font-size:14px;font-weight:800;color:{r["color"]};">'
+                f'{r["label"]}</div>'
                 f'    <div style="font-size:10px;font-weight:600;color:{r["color"]};'
                 f'background:{r["badge_bg"]};border:1px solid {r["border"]};'
-                f'border-radius:20px;padding:2px 10px;white-space:nowrap;">{r["period"]}</div>'
+                f'border-radius:20px;padding:3px 12px;white-space:nowrap;">'
+                f'{r["period"]}</div>'
                 f'  </div>'
                 f'  {items_html}'
                 f'</div>',

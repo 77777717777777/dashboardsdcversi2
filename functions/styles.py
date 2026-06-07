@@ -392,6 +392,32 @@ def inject_css():
     .white   { color: var(--color-navy) !important; }
 
     /* =========================================
+       STATS CARD — seragam untuk semua halaman
+       ========================================= */
+    .stats-card {
+        background: #FFFFFF;
+        border: 1px solid #D8EDE4;
+        border-radius: 8px;
+        padding: 12px;
+        text-align: center;
+        box-shadow: 0 1px 4px rgba(27,67,50,0.08);
+        box-sizing: border-box;
+    }
+    .stats-card-label {
+        font-size: 10px;
+        color: #74A98A;
+        font-weight: 600;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .stats-card-value {
+        font-size: 20px;
+        font-weight: 800;
+        line-height: 1.1;
+    }
+
+    /* =========================================
        CHART CONTAINER / VIZ CARD
        ========================================= */
     .viz-card {
@@ -653,21 +679,69 @@ def inject_css():
     TAB KPI — PENUH & RATA TENGAH
     ========================================= */
 
-    /* Buat tab list penuh lebar container */
+    /* =========================================
+       TABS — teks selalu terlihat
+       ========================================= */
+    /* =========================================
+       TABS — semua tab selalu terlihat
+       ========================================= */
     [data-testid="stTabs"] [data-baseweb="tab-list"] {
         width: 100% !important;
         display: flex !important;
-        justify-content: center !important;
+        background: transparent !important;
+        border-bottom: 1px solid #B7D9C8 !important;
+        padding: 0 !important;
+        gap: 0 !important;
+        border-radius: 0 !important;
     }
 
-    /* Tiap tab mengisi ruang secara merata */
     [data-testid="stTabs"] [data-baseweb="tab"] {
         flex: 1 1 0 !important;
         text-align: center !important;
         justify-content: center !important;
         min-width: 0 !important;
-        padding: 8px 0 !important;
-        font-size: 13px !important;}
+        padding: 10px 8px !important;
+        font-size: 12px !important;
+        font-weight: 600 !important;
+        color: #2D6A4F !important;
+        background: transparent !important;
+        border: none !important;
+        border-bottom: 3px solid transparent !important;
+        border-radius: 0 !important;
+        transition: all 0.15s !important;
+        margin-bottom: -1px !important;
+    }
+
+    [data-testid="stTabs"] [data-baseweb="tab"]:hover {
+        color: #1B4332 !important;
+        background: rgba(64,145,108,0.06) !important;
+        border-bottom: 3px solid #74A98A !important;
+    }
+
+    [data-testid="stTabs"] [aria-selected="true"] {
+        color: #1B4332 !important;
+        background: transparent !important;
+        border-bottom: 3px solid #40916C !important;
+        box-shadow: none !important;
+        font-weight: 700 !important;
+    }
+
+    /* Pastikan teks tab tidak hilang di semua kondisi */
+    [data-testid="stTabs"] [data-baseweb="tab"] p,
+    [data-testid="stTabs"] [data-baseweb="tab"] span,
+    [data-testid="stTabs"] [data-baseweb="tab"] div {
+        color: inherit !important;
+    }
+    /* Sembunyikan tombol panah scroll di tab */
+    [data-testid="stTabs"] [data-baseweb="tab-list"] button,
+    [data-testid="stTabs"] button[aria-label="scroll tab list forward"],
+    [data-testid="stTabs"] button[aria-label="scroll tab list back"],
+    [data-testid="stTabs"] [kind="scrollButton"] {
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        padding: 0 !important;
+    }
 
     /* =========================================
     SECTION HEADER — judul sub bab lebih kecil
