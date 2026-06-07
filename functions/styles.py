@@ -680,36 +680,49 @@ def inject_css():
     ========================================= */
 
     /* =========================================
-       TABS — fix deployed version
+       TABS — final clean version
        ========================================= */
     button[data-baseweb="tab"] {
         color: #1B4332 !important;
         background: transparent !important;
         border-bottom: 3px solid transparent !important;
-        font-size: 12px !important;
+        border-top: none !important;
+        border-left: none !important;
+        border-right: none !important;
+        border-radius: 0 !important;
+        font-size: clamp(10px, 1.1vw, 12px) !important;
         font-weight: 600 !important;
         font-family: 'DM Sans', sans-serif !important;
+        padding: 8px clamp(8px, 1.5vw, 18px) !important;
+        margin-right: 2px !important;
+        white-space: nowrap !important;
+        transition: all 0.15s !important;
     }
 
     button[data-baseweb="tab"]:hover {
         color: #1B4332 !important;
         background: rgba(64,145,108,0.08) !important;
+        border-bottom: 3px solid #74A98A !important;
     }
 
     button[data-baseweb="tab"][aria-selected="true"] {
         color: #1B4332 !important;
-        background: #FFFFFF !important;
+        background: transparent !important;
         border-bottom: 3px solid #40916C !important;
         font-weight: 700 !important;
         box-shadow: none !important;
     }
 
-    /* Tab list container */
+    button[data-baseweb="tab"] * {
+        color: inherit !important;
+    }
+
     div[data-baseweb="tab-list"] {
         background: transparent !important;
         border-bottom: 1px solid #B7D9C8 !important;
         gap: 0 !important;
         overflow: hidden !important;
+        padding: 0 !important;
     }
 
     /* Sembunyikan scroll arrow */
@@ -719,100 +732,35 @@ def inject_css():
         overflow: hidden !important;
     }
 
-    /* Paksa semua teks di dalam tab ikut warna parent */
-    button[data-baseweb="tab"] * {
-        color: inherit !important;
-    }
     button[data-baseweb="tab"] {
         color: #1B4332 !important;
         background: transparent !important;
         border-bottom: 3px solid transparent !important;
-        font-size: 12px !important;
+        border-top: none !important;
+        border-left: none !important;
+        border-right: none !important;
+        border-radius: 0 !important;
+        font-size: clamp(10px, 1.1vw, 12px) !important;
         font-weight: 600 !important;
         font-family: 'DM Sans', sans-serif !important;
-        padding: 8px 20px !important;        /* ← tambah padding kiri kanan */
-        margin-right: 4px !important;        /* ← tambah jarak antar tab */
-        white-space: nowrap !important;      /* ← biar teks tidak wrap */
-    }
-    button[data-baseweb="tab"] {
-        font-size: clamp(10px, 1.1vw, 13px) !important;   /* ← responsive font */
-        padding: 8px clamp(8px, 1.5vw, 20px) !important;  /* ← responsive padding */
-    }
-    
-
-    /* =========================================
-    SECTION HEADER — judul sub bab lebih kecil
-    ========================================= */
-    .section-title {
-        font-size: 12px !important;
-        font-weight: 600 !important;
-        color: var(--color-navy) !important;
-        font-family: 'Plus Jakarta Sans', sans-serif !important;
+        padding: 8px clamp(8px, 1.5vw, 18px) !important;
+        margin-right: 2px !important;
+        white-space: nowrap !important;
+        transition: all 0.15s !important;
+        text-align: center !important;           /* ← tambah */
+        justify-content: center !important;      /* ← tambah */
+        flex: 1 1 0 !important;                  /* ← tambah biar rata penuh */
+        min-width: 0 !important;                 /* ← tambah biar tidak overflow */
     }
 
-    .section-subtitle {
-        font-size: 10px !important;
-        color: var(--text-muted) !important;
-        margin-top: 2px !important;
-        font-weight: 400 !important;   
-        }
-
-    [data-testid="stTabs"] [aria-selected="true"] {
-        background: var(--bg-card) !important;
-        color: #40916C !important;
-        border-bottom: 2px solid #40916C !important;
-        box-shadow: var(--shadow-sm) !important;
-    }
-
-    /* Expander */
-    .streamlit-expanderHeader {
-        background: var(--bg-card) !important;
-        border: 1px solid var(--border-light) !important;
-        border-radius: var(--radius-sm) !important;
-        color: var(--color-navy) !important;
-        font-weight: 600 !important;
-        font-size: 13px !important;
-    }
-
-    /* Radio button di sidebar */
-    [data-testid="stSidebar"] [data-testid="stRadio"] label {
-        color: rgba(255,255,255,0.75) !important;
-        font-size: 12px !important;
-    }
-    
-    /* =========================================
-   RADIO BUTTON — DI LUAR SIDEBAR (konten utama)
-   ========================================= */
-   /* Teks label pilihan */
-   [data-testid="stRadio"] label p,
-    [data-testid="stRadio"] label span {
-        color: var(--text-primary) !important;
-        font-size: 12px !important;
-        font-weight: 500 !important;
-    }
-
-    /* Pilihan yang sedang aktif */
-    [data-testid="stRadio"] label[data-checked="true"] p,
-    [data-testid="stRadio"] label[data-checked="true"] span {
-        color: var(--color-royal) !important;
-        font-weight: 700 !important;
-    }
-
-    /* Hover */
-    [data-testid="stRadio"] label:hover p,
-    [data-testid="stRadio"] label:hover span {
-        color: var(--color-accent) !important;
-    }
-
-    /* Spinner */
-    [data-testid="stSpinner"] { color: var(--color-accent) !important; }
-
-    /* Info/warning boxes */
-    [data-testid="stInfo"] {
-        background: rgba(45,134,222,0.06) !important;
-        border-color: rgba(45,134,222,0.2) !important;
-        color: var(--color-navy) !important;
-        border-radius: var(--radius-sm) !important;
+    div[data-baseweb="tab-list"] {
+        background: transparent !important;
+        border-bottom: 1px solid #B7D9C8 !important;
+        gap: 0 !important;
+        overflow: hidden !important;
+        padding: 0 !important;
+        display: flex !important;                /* ← tambah */
+        width: 100% !important;                  /* ← tambah */
     }
 
     /* =========================================
