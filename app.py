@@ -1258,24 +1258,20 @@ def page_destination():
 
     with ta:
         ca2, cb2 = st.columns(2)
-        
+
         with ca2:
             section_header("Distribusi Tipe Hotel")
-            #st.markdown('<div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px;padding:16px 14px 8px;box-shadow:0 1px 4px rgba(15,42,74,0.08);">', unsafe_allow_html=True)
             if 'jenis' in d_df.columns:
                 tc_cnt = d_df['jenis'].value_counts().head(8)
-                colors_bar = ['#1D5FAD','#2E86DE','#0A9396','#1A7A4A','#6741D9','#C47B00','#C0392B','#5DADE2']
+                colors_bar = ['#40916C','#52B788','#2D6A4F','#1B4332','#74A98A','#E9A020','#C2185B','#1565C0']
                 fig = go.Figure(go.Bar(
                     y=tc_cnt.index.tolist(),
                     x=tc_cnt.values.tolist(),
                     orientation='h',
-                    marker=dict(
-                        color=colors_bar[:len(tc_cnt)],
-                        opacity=0.85,
-                    ),
+                    marker=dict(color=colors_bar[:len(tc_cnt)], opacity=0.88),
                     text=tc_cnt.values.tolist(),
                     textposition='outside',
-                    textfont=dict(color='#4A6080', size=11),
+                    textfont=dict(color='#1B4332', size=11),
                     hovertemplate='<b>%{y}</b><br>Jumlah: %{x}<extra></extra>',
                 ))
                 fig.update_layout(
@@ -1284,35 +1280,32 @@ def page_destination():
                     height=280,
                     margin=dict(l=10, r=40, t=10, b=10),
                     xaxis=dict(
-                        gridcolor='rgba(15,42,74,0.08)',
-                        tickfont=dict(color='#64748B', size=10),
+                        gridcolor='rgba(64,145,108,0.1)',
+                        tickfont=dict(color='#2D6A4F', size=10),
                         title='Jumlah Hotel',
-                        title_font=dict(color='#64748B', size=10),
+                        title_font=dict(color='#2D6A4F', size=10),
                     ),
                     yaxis=dict(
-                        tickfont=dict(color='#334155', size=11),
+                        tickfont=dict(color='#1B4332', size=11),
                         autorange='reversed',
                     ),
+                    showlegend=False,
                 )
                 st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-            #st.markdown('</div>', unsafe_allow_html=True)
+
         with cb2:
             section_header("Distribusi Bintang Hotel")
-            #st.markdown('<div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px;padding:16px 14px 8px;box-shadow:0 1px 4px rgba(15,42,74,0.08);">', unsafe_allow_html=True)
             if 'kasta_bintang' in d_df.columns:
                 sc_cnt = d_df['kasta_bintang'].value_counts().head(8)
-                star_colors = ['#C47B00','#1D5FAD','#2E86DE','#0A9396','#6741D9','#1A7A4A','#C0392B','#94A3B8']
+                star_colors = ['#E9A020','#40916C','#52B788','#2D6A4F','#C2185B','#1565C0','#7B2D8B','#74A98A']
                 fig = go.Figure(go.Bar(
                     y=sc_cnt.index.tolist(),
                     x=sc_cnt.values.tolist(),
                     orientation='h',
-                    marker=dict(
-                        color=star_colors[:len(sc_cnt)],
-                        opacity=0.85,
-                    ),
+                    marker=dict(color=star_colors[:len(sc_cnt)], opacity=0.88),
                     text=sc_cnt.values.tolist(),
                     textposition='outside',
-                    textfont=dict(color='#4A6080', size=11),
+                    textfont=dict(color='#1B4332', size=11),
                     hovertemplate='<b>%{y}</b><br>Jumlah: %{x}<extra></extra>',
                 ))
                 fig.update_layout(
@@ -1321,153 +1314,89 @@ def page_destination():
                     height=280,
                     margin=dict(l=10, r=40, t=10, b=10),
                     xaxis=dict(
-                        gridcolor='rgba(15,42,74,0.08)',
-                        tickfont=dict(color='#64748B', size=10),
+                        gridcolor='rgba(64,145,108,0.1)',
+                        tickfont=dict(color='#2D6A4F', size=10),
                         title='Jumlah Hotel',
-                        title_font=dict(color='#64748B', size=10),
+                        title_font=dict(color='#2D6A4F', size=10),
                     ),
                     yaxis=dict(
-                        tickfont=dict(color='#334155', size=11),
+                        tickfont=dict(color='#1B4332', size=11),
                         autorange='reversed',
                     ),
+                    showlegend=False,
                 )
                 st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-            #st.markdown('</div>', unsafe_allow_html=True)
-        section_header(f"Daftar Hotel — {sel}")
-        for _, row in d_df.nlargest(min(6, len(d_df)), 'opportunity_score').iterrows():
-            rec  = str(row.get('rekomendasi_investasi', ''))
-            
-            # Badge warna & teks FULL
-            if 'Sangat' in rec or 'Highly' in rec:
-                badge_bg, badge_color, badge_text = 'rgba(26,122,74,0.12)', '#1A7A4A', 'Sangat Direkomendasikan'
-                badge_border = 'rgba(26,122,74,0.25)'
-            elif rec == 'Recommended' or rec == 'Direkomendasikan':
-                badge_bg, badge_color, badge_text = 'rgba(29,95,173,0.12)', '#1D5FAD', 'Direkomendasikan'
-                badge_border = 'rgba(29,95,173,0.25)'
-            elif 'Perlu' in rec or 'Further' in rec:
-                badge_bg, badge_color, badge_text = 'rgba(196,123,0,0.12)', '#B8680A', 'Perlu Kajian Lebih'
-                badge_border = 'rgba(196,123,0,0.25)'
-            else:
-                badge_bg, badge_color, badge_text = 'rgba(192,57,43,0.12)', '#C0392B', 'Tidak Direkomendasikan'
-                badge_border = 'rgba(192,57,43,0.25)'
-
-            price    = row.get('harga', None)
-            pstr     = f"Rp {int(price):,}" if price and not (isinstance(price, float) and np.isnan(price)) else 'N/A'
-            foto_url = str(row.get('foto_url', '')) if 'foto_url' in row else ''
-            
-            # Gambar: pakai foto_url jika ada, fallback ke emoji
-            if foto_url and foto_url != 'nan' and foto_url.startswith('http'):
-                img_html = (
-                    f'<img src="{foto_url}" '
-                    f'style="width:52px;height:52px;border-radius:8px;object-fit:cover;'
-                    f'flex-shrink:0;border:1px solid #E2E8F0;" '
-                    f'onerror="this.style.display=\'none\';this.nextSibling.style.display=\'flex\';">'
-                    f'<div style="display:none;width:52px;height:52px;border-radius:8px;'
-                    f'background:#EFF6FF;align-items:center;justify-content:center;'
-                    f'font-size:22px;flex-shrink:0;border:1px solid #E2E8F0;">🏨</div>'
-                )
-            else:
-                img_html = (
-                    f'<div style="width:52px;height:52px;border-radius:8px;'
-                    f'background:#EFF6FF;display:flex;align-items:center;justify-content:center;'
-                    f'font-size:22px;flex-shrink:0;border:1px solid #DBEAFE;">🏨</div>'
-                )
-
-            st.markdown(
-                f'<div style="display:flex;align-items:center;gap:14px;'
-                f'padding:14px 16px;background:#FFFFFF;'
-                f'border:1px solid #E2E8F0;border-radius:10px;margin-bottom:8px;'
-                f'box-shadow:0 1px 4px rgba(15,42,74,0.08);">'
-                
-                # Foto
-                f'  <div style="display:flex;flex-shrink:0;">{img_html}</div>'
-                
-                # Info hotel
-                f'  <div style="flex:1;min-width:0;">'
-                f'    <div style="font-size:13px;font-weight:700;color:#0F2A4A;margin-bottom:3px;'
-                f'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
-                f'{row.get("nama_hotel","")}</div>'
-                f'    <div style="font-size:11px;color:#64748B;">'
-                f'{row.get("kasta_bintang","")} · {row.get("jenis","")} · {pstr}</div>'
-                f'  </div>'
-                
-                # Skor
-                f'  <div style="text-align:center;padding:0 12px;flex-shrink:0;">'
-                f'    <div style="font-size:9px;color:#94A3B8;margin-bottom:2px;">OPP</div>'
-                f'    <div style="font-size:18px;font-weight:800;color:#1A7A4A;">'
-                f'{row.get("opportunity_score",0):.0f}</div>'
-                f'  </div>'
-                f'  <div style="text-align:center;padding:0 8px;flex-shrink:0;">'
-                f'    <div style="font-size:9px;color:#94A3B8;margin-bottom:2px;">IIA</div>'
-                f'    <div style="font-size:18px;font-weight:800;color:#1D5FAD;">'
-                f'{row.get("investor_interest_index",0):.0f}</div>'
-                f'  </div>'
-                
-                # Badge — full text, centered, min-width agar tidak terpotong
-                f'  <div style="flex-shrink:0;min-width:160px;text-align:center;">'
-                f'    <span style="display:inline-block;width:100%;text-align:center;'
-                f'background:{badge_bg};color:{badge_color};'
-                f'border:1px solid {badge_border};'
-                f'border-radius:20px;padding:5px 14px;'
-                f'font-size:10px;font-weight:700;white-space:nowrap;">'
-                f'{badge_text}</span>'
-                f'  </div>'
-                
-                f'</div>',
-                unsafe_allow_html=True
-            )
     def hist_chart(col, color, title_x):
-        fig = go.Figure(go.Histogram(x=d_df[col].dropna(), nbinsx=15,
-                                     marker=dict(color=color, opacity=0.8, line=dict(width=0))))
-        fig = apply_layout(fig, height=240)
-        fig.update_xaxes(title=title_x)
-        fig.update_yaxes(title='Count')
+        fig = go.Figure(go.Histogram(
+            x=d_df[col].dropna(), nbinsx=15,
+            marker=dict(color=color, opacity=0.85, line=dict(width=0))
+        ))
+        fig.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            height=240,
+            margin=dict(l=10, r=10, t=10, b=40),
+            showlegend=False,
+            xaxis=dict(
+                title=title_x,
+                title_font=dict(color='#2D6A4F', size=10),
+                tickfont=dict(color='#2D6A4F', size=10),
+                gridcolor='rgba(64,145,108,0.1)',
+            ),
+            yaxis=dict(
+                title='Jumlah',
+                title_font=dict(color='#2D6A4F', size=10),
+                tickfont=dict(color='#2D6A4F', size=10),
+                gridcolor='rgba(64,145,108,0.1)',
+            ),
+        )
         return fig
 
     with tb:
         cc2, cd2 = st.columns(2)
         with cc2:
-            section_header("Competition Distribution")
-            st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
-            st.plotly_chart(hist_chart('competition_score','#EF4444','Competition Score'), use_container_width=True, config={'displayModeBar':False})
-            st.markdown('</div>', unsafe_allow_html=True)
+            section_header("Distribusi Tingkat Persaingan")
+            st.plotly_chart(hist_chart('competition_score', '#1565C0', 'Skor Persaingan'),
+                            use_container_width=True, config={'displayModeBar': False})
         with cd2:
-            section_header("Ocean Status Breakdown")
-            st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+            section_header("Status Pasar (Ocean)")
             oc = d_df['status_ocean'].value_counts()
             lb = [l.split('(')[0].strip() for l in oc.index]
-            cc3 = ['#EF4444' if 'Red' in l else '#00D4FF' for l in oc.index]
-            st.plotly_chart(plot_donut(lb, oc.values.tolist(), colors=cc3), use_container_width=True, config={'displayModeBar':False})
-            st.markdown('</div>', unsafe_allow_html=True)
-
+            cc3 = ['#D62839' if 'Red' in l else '#1565C0' for l in oc.index]
+            fig = plot_donut(lb, oc.values.tolist(), colors=cc3)
+            fig.update_layout(
+                legend=dict(
+                    font=dict(color='#1B4332', size=10),
+                    bgcolor='rgba(255,255,255,0.9)',
+                ),
+            )
+            fig.update_traces(textfont=dict(color='#FFFFFF'))
+            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
     with tc:
         ce2, cf2 = st.columns(2)
         with ce2:
-            section_header("Review Volume Distribution")
-            st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
-            st.plotly_chart(hist_chart('jumlah_ulasan','#00D4FF','Review Count'), use_container_width=True, config={'displayModeBar':False})
-            st.markdown('</div>', unsafe_allow_html=True)
+            section_header("Distribusi Volume Ulasan")
+            st.plotly_chart(hist_chart('jumlah_ulasan', '#1565C0', 'Jumlah Ulasan'),
+                            use_container_width=True, config={'displayModeBar': False})
         with cf2:
-            section_header("Demand Score Distribution")
-            st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
-            st.plotly_chart(hist_chart('demand_score','#22C55E','Demand Score'), use_container_width=True, config={'displayModeBar':False})
-            st.markdown('</div>', unsafe_allow_html=True)
+            section_header("Distribusi Skor Permintaan")
+            st.plotly_chart(hist_chart('demand_score', '#40916C', 'Skor Permintaan'),
+                            use_container_width=True, config={'displayModeBar': False})
 
     with td:
         cg2, ch2 = st.columns(2)
         with cg2:
-            section_header("Ecosystem Score Distribution")
-            st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
-            st.plotly_chart(hist_chart('ecosystem_score','#3B82F6','Ecosystem Score'), use_container_width=True, config={'displayModeBar':False})
-            st.markdown('</div>', unsafe_allow_html=True)
+            section_header("Distribusi Skor Ekosistem")
+            st.plotly_chart(hist_chart('ecosystem_score', '#52B788', 'Skor Ekosistem'),
+                            use_container_width=True, config={'displayModeBar': False})
         with ch2:
-            section_header("Top Nearest Attractions")
+            section_header("Atraksi Terdekat Terpopuler")
             if 'nama_atraksi_terdekat' in d_df.columns:
                 for attr, cnt in d_df['nama_atraksi_terdekat'].value_counts().head(7).items():
                     st.markdown(
                         f'<div class="metric-row">'
                         f'  <span class="metric-name">🌿 {str(attr)[:32]}</span>'
-                        f'  <span class="metric-val">{cnt} hotels</span>'
+                        f'  <span class="metric-val">{cnt} hotel</span>'
                         f'</div>',
                         unsafe_allow_html=True
                     )
@@ -1475,29 +1404,33 @@ def page_destination():
     with te:
         ci2, cj2 = st.columns(2)
         with ci2:
-            section_header("Opportunity Score Distribution")
-            st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
-            st.plotly_chart(hist_chart('opportunity_score','#22C55E','Opportunity Score'), use_container_width=True, config={'displayModeBar':False})
-            st.markdown('</div>', unsafe_allow_html=True)
+            section_header("Distribusi Skor Peluang")
+            st.plotly_chart(hist_chart('opportunity_score', '#1565C0', 'Skor Peluang'),
+                            use_container_width=True, config={'displayModeBar': False})
         with cj2:
-            section_header("Recommendation Breakdown")
-            st.markdown('<div style="border:1px solid rgba(0,212,255,0.12);border-radius:12px;padding:12px 10px 4px;background:rgba(13,33,55,0.65);">', unsafe_allow_html=True)
+            section_header("Komposisi Rekomendasi Investasi")
             rc_cnt = d_df['rekomendasi_investasi'].value_counts()
             rc_clr = []
             for l in rc_cnt.index:
                 l_str = str(l)
                 if 'Sangat' in l_str or 'Highly' in l_str:
-                    rc_clr.append('#1A7A4A')   # hijau — Sangat Direkomendasikan
+                    rc_clr.append('#2D6A4F')
                 elif 'Direkomendasikan' in l_str or l_str == 'Recommended':
-                    rc_clr.append('#1D5FAD')   # biru — Direkomendasikan
+                    rc_clr.append('#1565C0')
                 elif 'Perlu' in l_str or 'Further' in l_str or 'Kajian' in l_str:
-                    rc_clr.append('#C47B00')   # oranye — Perlu Kajian
+                    rc_clr.append('#E9A020')
                 else:
-                    rc_clr.append('#C0392B')   # merah — Tidak Direkomendasikan
-            st.plotly_chart(plot_donut(rc_cnt.index.tolist(), rc_cnt.values.tolist(), colors=rc_clr), use_container_width=True, config={'displayModeBar':False})
-            st.markdown('</div>', unsafe_allow_html=True)
-
-
+                    rc_clr.append('#D62839')
+            fig = plot_donut(rc_cnt.index.tolist(), rc_cnt.values.tolist(), colors=rc_clr)
+            fig.update_layout(
+                legend=dict(
+                    font=dict(color='#1B4332', size=10),
+                    bgcolor='rgba(255,255,255,0.9)',
+                ),
+            )
+            fig.update_traces(textfont=dict(color='#FFFFFF'))
+            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+       
 # ════════════════════════════════════════════════════════════════════
 # PAGE 9 — STRATEGIC RECOMMENDATIONS
 # ════════════════════════════════════════════════════════════════════
