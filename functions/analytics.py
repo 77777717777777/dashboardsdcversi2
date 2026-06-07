@@ -9,30 +9,64 @@ import streamlit as st
 # CONSTANTS & DESIGN TOKENS
 # ==========================================
 DESIGN = {
-    'bg':        '#FFFFFF',
+    'bg':        '#F0F7F4',
+    'secondary': '#FFFFFF',    # ← tambahkan ini
     'card':      '#FFFFFF',
-    'border':    '#D8E4F0',
-    'accent':    '#2E86DE',
-    'success':   '#1A7A4A',
-    'danger':    '#C0392B',
-    'warning':   '#C47B00',
-    'purple':    '#6741D9',
-    'secondary': '#4A6080',
-    'text':      '#0F2A4A'
+    'navy':      '#1B4332',
+    'accent':    '#40916C',
+    'accent2':   '#52B788',
+    'success':   '#2D6A4F',
+    'warning':   '#E9A020',
+    'danger':    '#D62839',
+    'purple':    '#7B2D8B',
+    'blue':      '#1565C0',
+    'magenta':   '#C2185B',
+    'orange':    '#F4732A',
+    'teal':      '#00897B',
+    'muted':     '#74A98A',
+    'text':      '#1B4332',
+    'white':     '#FFFFFF',    # ← tambahkan ini juga biar aman
 }
+
+# Palet chart multi-warna — semua harmonis dengan tema hijau Wonderful Indonesia
+CHART_COLORS = [
+    '#40916C',  # hijau utama
+    '#E9A020',  # oranye — Wonderful Indonesia
+    '#C2185B',  # magenta — Wonderful Indonesia
+    '#1565C0',  # biru
+    '#7B2D8B',  # ungu
+    '#F4732A',  # oranye tua
+    '#00897B',  # teal
+    '#D62839',  # merah
+    '#52B788',  # hijau muda
+    '#FFB300',  # kuning amber
+    '#0288D1',  # biru muda
+]
 
 PLOTLY_LAYOUT = dict(
     paper_bgcolor='rgba(0,0,0,0)',
     plot_bgcolor='rgba(0,0,0,0)',
-    font=dict(family='DM Sans', color='#4A6080', size=11),
-    margin=dict(l=40, r=40, t=30, b=40),
-    xaxis=dict(gridcolor='rgba(15,42,74,0.07)', zeroline=False,
-               linecolor='#D8E4F0', tickfont=dict(color='#4A6080')),
-    yaxis=dict(gridcolor='rgba(15,42,74,0.07)', zeroline=False,
-               linecolor='#D8E4F0', tickfont=dict(color='#4A6080')),
-    legend=dict(bgcolor='rgba(255,255,255,0.9)',
-                bordercolor='#D8E4F0', borderwidth=1,
-                font=dict(color='#0F2A4A')),
+    font=dict(color='#2D6A4F', family='DM Sans, sans-serif', size=11),
+    margin=dict(l=10, r=10, t=30, b=10),
+    showlegend=True,
+    legend=dict(
+        bgcolor='rgba(255,255,255,0.9)',
+        bordercolor='#D8EDE4',
+        borderwidth=1,
+        font=dict(color='#2D6A4F', size=10),
+    ),
+    xaxis=dict(
+        gridcolor='rgba(64,145,108,0.08)',
+        zerolinecolor='rgba(64,145,108,0.12)',
+        tickfont=dict(color='#74A98A', size=10),
+        title_font=dict(color='#2D6A4F', size=11),
+    ),
+    yaxis=dict(
+        gridcolor='rgba(64,145,108,0.08)',
+        zerolinecolor='rgba(64,145,108,0.12)',
+        tickfont=dict(color='#74A98A', size=10),
+        title_font=dict(color='#2D6A4F', size=11),
+    ),
 )
 
 DEST_DISPLAY = {

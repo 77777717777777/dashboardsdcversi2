@@ -14,32 +14,34 @@ def inject_css():
        Cocok untuk presentasi kementerian
        ========================================= */
     :root {
-        --bg-primary:     #F0F4F8;
+        --bg-primary:     #F0F7F4;
         --bg-secondary:   #FFFFFF;
         --bg-card:        #FFFFFF;
-        --bg-sidebar:     #0F2A4A;
-        --bg-sidebar-sec: #1A3A5C;
+        --bg-sidebar:     #1B4332;
+        --bg-sidebar-sec: #2D6A4F;
 
-        --color-navy:     #0F2A4A;
-        --color-royal:    #1D5FAD;
-        --color-accent:   #2E86DE;
-        --color-teal:     #0A9396;
+        --color-navy:     #1B4332;
+        --color-royal:    #2D6A4F;
+        --color-accent:   #40916C;
+        --color-teal:     #52B788;
 
-        --color-success:  #1A7A4A;
-        --color-warning:  #C47B00;
-        --color-danger:   #C0392B;
-        --color-purple:   #6741D9;
+        --color-success:  #2D6A4F;
+        --color-warning:  #E9A020;
+        --color-danger:   #D62839;
+        --color-purple:   #7B2D8B;
+        --color-blue:     #1565C0;
+        --color-magenta:  #C2185B;
 
-        --text-primary:   #0F2A4A;
-        --text-secondary: #4A6080;
-        --text-muted:     #8A9BB0;
+        --text-primary:   #1B4332;
+        --text-secondary: #2D6A4F;
+        --text-muted:     #74A98A;
         --text-white:     #FFFFFF;
 
-        --border-light:   #D8E4F0;
-        --border-medium:  #B0C8E0;
-        --shadow-sm:      0 1px 4px rgba(15,42,74,0.08);
-        --shadow-md:      0 4px 16px rgba(15,42,74,0.12);
-        --shadow-lg:      0 8px 32px rgba(15,42,74,0.16);
+        --border-light:   #D8EDE4;
+        --border-medium:  #B7D9C8;
+        --shadow-sm:      0 1px 4px rgba(27,67,50,0.08);
+        --shadow-md:      0 4px 16px rgba(27,67,50,0.12);
+        --shadow-lg:      0 8px 32px rgba(27,67,50,0.16);
 
         --radius-sm: 6px;
         --radius-md: 10px;
@@ -55,10 +57,10 @@ def inject_css():
     }
 
     [data-testid="stAppViewContainer"] {
-        background-color: var(--bg-primary);
+        background-color: #F0F7F4;
         background-image:
-            radial-gradient(ellipse at 10% 0%, rgba(45,134,222,0.06) 0%, transparent 50%),
-            radial-gradient(ellipse at 90% 100%, rgba(10,147,150,0.05) 0%, transparent 50%);
+            radial-gradient(ellipse at 10% 0%, rgba(64,145,108,0.08) 0%, transparent 50%),
+            radial-gradient(ellipse at 90% 100%, rgba(82,183,136,0.06) 0%, transparent 50%);
     }
 
     /* Header transparan agar tidak muncul garis hitam */
@@ -97,8 +99,8 @@ def inject_css():
        SIDEBAR
        ========================================= */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, var(--bg-sidebar) 0%, #0A1F38 100%) !important;
-        border-right: 1px solid rgba(255,255,255,0.08);
+        background: linear-gradient(180deg, #1B4332 0%, #081C15 100%) !important;
+        border-right: 1px solid rgba(82,183,136,0.2);
     }
 
     [data-testid="stSidebar"] > div:first-child {
@@ -120,8 +122,8 @@ def inject_css():
     }
 
     [data-testid="stSidebar"] button:hover {
-        background: rgba(45,134,222,0.2) !important;
-        border-color: rgba(45,134,222,0.4) !important;
+        background: rgba(82,183,136,0.2) !important;
+        border-color: rgba(82,183,136,0.4) !important;
         color: #FFFFFF !important;
     }
 
@@ -141,7 +143,7 @@ def inject_css():
     .sidebar-logo-icon {
         width: 38px;
         height: 38px;
-        background: linear-gradient(135deg, #2E86DE, #0A9396);
+        background: linear-gradient(135deg, #40916C, #52B788);
         border-radius: 8px;
         display: flex;
         align-items: center;
@@ -226,13 +228,13 @@ def inject_css():
         padding: 20px 24px;
         margin-bottom: 20px;
         box-shadow: var(--shadow-sm);
-        border-left: 4px solid var(--color-royal);
+        border-left: 4px solid #40916C;
     }
 
     .page-header-icon {
         width: 44px;
         height: 44px;
-        background: linear-gradient(135deg, var(--color-royal), var(--color-accent));
+        background: linear-gradient(135deg, #2D6A4F, #52B788);
         border-radius: 10px;
         display: flex;
         align-items: center;
@@ -271,7 +273,7 @@ def inject_css():
         width: 3px;
         height: 100%;
         min-height: 36px;
-        background: linear-gradient(180deg, var(--color-royal), var(--color-teal));
+        background: linear-gradient(180deg, #40916C, #52B788);
         border-radius: 2px;
         flex-shrink: 0;
         margin-top: 2px;
@@ -294,7 +296,7 @@ def inject_css():
     /* =========================================
        KPI CARDS
        ========================================= */
-.kpi-card {
+    .kpi-card {
         border: none;
         border-radius: var(--radius-md);
         padding: 16px 18px;
@@ -318,7 +320,14 @@ def inject_css():
     .kpi-card .kpi-sub   { color: rgba(255,255,255,0.6) !important; }
 
     /* Hapus ::before gradient bar karena card sudah berwarna */
-    .kpi-card::before { display: none; }
+    .kpi-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #1B4332, #40916C, #52B788);
+        border-radius: var(--radius-md) var(--radius-md) 0 0;
+    }
 
     .kpi-card:hover {
         box-shadow: var(--shadow-md);
@@ -679,7 +688,8 @@ def inject_css():
 
     [data-testid="stTabs"] [aria-selected="true"] {
         background: var(--bg-card) !important;
-        color: var(--color-royal) !important;
+        color: #40916C !important;
+        border-bottom: 2px solid #40916C !important;
         box-shadow: var(--shadow-sm) !important;
     }
 
