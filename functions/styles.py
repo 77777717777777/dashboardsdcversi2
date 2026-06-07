@@ -680,68 +680,65 @@ def inject_css():
     ========================================= */
 
     /* =========================================
-       TABS — teks selalu terlihat
+       TABS — fix deployed version
        ========================================= */
-    /* =========================================
-       TABS — semua tab selalu terlihat
-       ========================================= */
-    [data-testid="stTabs"] [data-baseweb="tab-list"] {
-        width: 100% !important;
-        display: flex !important;
+    button[data-baseweb="tab"] {
+        color: #1B4332 !important;
         background: transparent !important;
-        border-bottom: 1px solid #B7D9C8 !important;
-        padding: 0 !important;
-        gap: 0 !important;
-        border-radius: 0 !important;
-    }
-
-    [data-testid="stTabs"] [data-baseweb="tab"] {
-        flex: 1 1 0 !important;
-        text-align: center !important;
-        justify-content: center !important;
-        min-width: 0 !important;
-        padding: 10px 8px !important;
+        border-bottom: 3px solid transparent !important;
         font-size: 12px !important;
         font-weight: 600 !important;
-        color: #2D6A4F !important;
-        background: transparent !important;
-        border: none !important;
-        border-bottom: 3px solid transparent !important;
-        border-radius: 0 !important;
-        transition: all 0.15s !important;
-        margin-bottom: -1px !important;
+        font-family: 'DM Sans', sans-serif !important;
     }
 
-    [data-testid="stTabs"] [data-baseweb="tab"]:hover {
+    button[data-baseweb="tab"]:hover {
         color: #1B4332 !important;
-        background: rgba(64,145,108,0.06) !important;
-        border-bottom: 3px solid #74A98A !important;
+        background: rgba(64,145,108,0.08) !important;
     }
 
-    [data-testid="stTabs"] [aria-selected="true"] {
+    button[data-baseweb="tab"][aria-selected="true"] {
         color: #1B4332 !important;
-        background: transparent !important;
+        background: #FFFFFF !important;
         border-bottom: 3px solid #40916C !important;
-        box-shadow: none !important;
         font-weight: 700 !important;
+        box-shadow: none !important;
     }
 
-    /* Pastikan teks tab tidak hilang di semua kondisi */
-    [data-testid="stTabs"] [data-baseweb="tab"] p,
-    [data-testid="stTabs"] [data-baseweb="tab"] span,
-    [data-testid="stTabs"] [data-baseweb="tab"] div {
+    /* Tab list container */
+    div[data-baseweb="tab-list"] {
+        background: transparent !important;
+        border-bottom: 1px solid #B7D9C8 !important;
+        gap: 0 !important;
+        overflow: hidden !important;
+    }
+
+    /* Sembunyikan scroll arrow */
+    div[data-baseweb="tab-list"] > button:not([data-baseweb="tab"]) {
+        display: none !important;
+        width: 0 !important;
+        overflow: hidden !important;
+    }
+
+    /* Paksa semua teks di dalam tab ikut warna parent */
+    button[data-baseweb="tab"] * {
         color: inherit !important;
     }
-    /* Sembunyikan tombol panah scroll di tab */
-    [data-testid="stTabs"] [data-baseweb="tab-list"] button,
-    [data-testid="stTabs"] button[aria-label="scroll tab list forward"],
-    [data-testid="stTabs"] button[aria-label="scroll tab list back"],
-    [data-testid="stTabs"] [kind="scrollButton"] {
-        display: none !important;
-        visibility: hidden !important;
-        width: 0 !important;
-        padding: 0 !important;
+    button[data-baseweb="tab"] {
+        color: #1B4332 !important;
+        background: transparent !important;
+        border-bottom: 3px solid transparent !important;
+        font-size: 12px !important;
+        font-weight: 600 !important;
+        font-family: 'DM Sans', sans-serif !important;
+        padding: 8px 20px !important;        /* ← tambah padding kiri kanan */
+        margin-right: 4px !important;        /* ← tambah jarak antar tab */
+        white-space: nowrap !important;      /* ← biar teks tidak wrap */
     }
+    button[data-baseweb="tab"] {
+        font-size: clamp(10px, 1.1vw, 13px) !important;   /* ← responsive font */
+        padding: 8px clamp(8px, 1.5vw, 20px) !important;  /* ← responsive padding */
+    }
+    
 
     /* =========================================
     SECTION HEADER — judul sub bab lebih kecil
