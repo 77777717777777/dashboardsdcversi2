@@ -453,6 +453,41 @@ def page_spatial():
         )
 
         # ── LEGEND HORIZONTAL 
+        # ── LEGEND DINAMIS (BERUBAH SESUAI LAYER AKTIF) ───────────
+        if sel_layer == "Peluang Investasi":
+            legend_items = [
+                ('#16A34A', 'Peluang Tinggi'), ('#3B82F6', 'Peluang Sedang'), 
+                ('#D97706', 'Peluang Rendah'), ('#DC2626', 'Pasar Jenuh')
+            ]
+        elif sel_layer == "Heatmap Permintaan":
+            legend_items = [
+                ('#DC2626', 'Demand Sangat Padat (Hot)'), 
+                ('#D97706', 'Demand Sedang'), 
+                ('#16A34A', 'Demand Rendah (Sepi)')
+            ]
+        elif sel_layer == "Kepadatan Persaingan":
+            legend_items = [
+                ('#DC2626', 'Persaingan Sangat Ketat (Red)'), 
+                ('#D97706', 'Persaingan Sedang'), 
+                ('#16A34A', 'Persaingan Rendah (Aman)')
+            ]
+        elif sel_layer in ["Red vs Blue Ocean", "Klaster DBSCAN"]:
+            legend_items = [
+                ('#DC2626', 'Red Ocean (Clustered/Padat)'), 
+                ('#3B82F6', 'Blue Ocean (Noise/Berpeluang)')
+            ]
+        elif sel_layer == "Jaringan Atraksi":
+            legend_items = [
+                ('#333333', 'Titik Magnet Atraksi Wisata')
+            ]
+        elif sel_layer == "Hotel Premium":
+            legend_items = [
+                ('#A855F7', 'Segmen Premium / Luxury'), 
+                ('#CBD5E1', 'Segmen Standar / Budget')
+            ]
+        else:
+            legend_items = [('#16A34A', 'Tinggi'), ('#DC2626', 'Rendah')]
+
         st.markdown(
             '<div style="display:flex;gap:16px;align-items:center;'
             'padding:8px 14px;background:#F8FAFC;'
@@ -462,12 +497,7 @@ def page_spatial():
                 f'  <div style="width:9px;height:9px;border-radius:50%;background:{c};flex-shrink:0;"></div>'
                 f'  <span style="font-size:11px;color:#334155;font-weight:500;">{lbl}</span>'
                 f'</div>'
-                for c, lbl in [
-                    ('#16A34A', 'Peluang Tinggi'),
-                    ('#3B82F6', 'Peluang Sedang'),
-                    ('#D97706', 'Peluang Rendah'),
-                    ('#DC2626', 'Pasar Jenuh'),
-                ]
+                for c, lbl in legend_items
             ])
             + '</div>',
             unsafe_allow_html=True
@@ -922,8 +952,11 @@ def page_investment():
         "Scorecard Investasi per Destinasi",
         "Penilaian tingkat wilayah — dari 10 Destinasi Super Prioritas"
     )
-
     for _, row in dest_inv.sort_values('avg_opp', ascending=False).iterrows():
+        # ← Tambahkan skip Manado
+        if 'Manado' in str(row['destinasi']):
+            continue
+            
         grade     = row['inv_grade']
         grade_clr = '#1A7A4A' if grade == 'A' else ('#1D5FAD' if grade == 'B' else '#B8680A')
         bar_opp   = min(row['avg_opp'], 100)
@@ -998,7 +1031,10 @@ def page_investment():
         top3_joined = top3_df.copy()
         top3_joined['foto_url'] = None
 
-    all_dest_top3 = ['Semua Destinasi'] + sorted(top3_joined['destinasi'].unique().tolist())
+    all_dest_top3 = ['Semua Destinasi'] + sorted([
+        d for d in top3_joined['destinasi'].unique().tolist()
+        if 'Manado' not in str(d)
+    ])
     sel_dest_top3 = st.selectbox(
         "Filter Destinasi", all_dest_top3,
         key='inv_dest_filter', label_visibility='collapsed'
@@ -1008,6 +1044,11 @@ def page_investment():
         top3_joined if sel_dest_top3 == 'Semua Destinasi'
         else top3_joined[top3_joined['destinasi'] == sel_dest_top3]
     )
+
+    # ← Tambahkan filter ini sebelum for loop groupby
+    filtered_top3 = filtered_top3[
+        ~filtered_top3['destinasi'].str.contains('Manado', case=False, na=False)
+    ]
 
     for dest_name, grp in filtered_top3.groupby('destinasi'):
         dest_avg_opp  = dest_inv.loc[dest_inv['destinasi'] == dest_name, 'avg_opp'].values
@@ -1295,7 +1336,7 @@ def page_investment():
     worst = dest_inv.nlargest(1, 'avg_competition').iloc[0]
 
     st.markdown(insight_html(
-        "AI Investment Summary — Rekomendasi Wilayah Final",
+        "Rekomendasi Wilayah Final",
         f"<strong style='color:#22C55E'>Top 3 DSP untuk investasi sekarang: {best_names}</strong> "
         f"berdasarkan kombinasi opportunity score, demand tervalidasi, dan ekosistem atraksi. "
         f"<br><br>"
@@ -1968,12 +2009,13 @@ def page_destination():
                     paper_bgcolor='rgba(0,0,0,0)',
                     plot_bgcolor='rgba(0,0,0,0)',
                     height=280,
-                    margin=dict(l=10, r=40, t=10, b=10),
+                    margin=dict(l=10, r=60, t=10, b=10),
                     xaxis=dict(
                         gridcolor='rgba(64,145,108,0.1)',
                         tickfont=dict(color='#2D6A4F', size=10),
                         title='Jumlah Hotel',
                         title_font=dict(color='#2D6A4F', size=10),
+                        range=[0, tc_cnt.values.max() * 1.2],
                     ),
                     yaxis=dict(
                         tickfont=dict(color='#1B4332', size=11),
@@ -2002,12 +2044,13 @@ def page_destination():
                     paper_bgcolor='rgba(0,0,0,0)',
                     plot_bgcolor='rgba(0,0,0,0)',
                     height=280,
-                    margin=dict(l=10, r=40, t=10, b=10),
+                    margin=dict(l=10, r=60, t=10, b=10),
                     xaxis=dict(
                         gridcolor='rgba(64,145,108,0.1)',
                         tickfont=dict(color='#2D6A4F', size=10),
                         title='Jumlah Hotel',
                         title_font=dict(color='#2D6A4F', size=10),
+                        range=[0, sc_cnt.values.max() * 1.2],
                     ),
                     yaxis=dict(
                         tickfont=dict(color='#1B4332', size=11),
@@ -2016,9 +2059,11 @@ def page_destination():
                     showlegend=False,
                 )
                 st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    def hist_chart(col, color, title_x):
+
+    # ← hist_chart HARUS di sini, setelah with ta: selesai, sebelum with tb:
+    def hist_chart(kolom, color, title_x):
         fig = go.Figure(go.Histogram(
-            x=d_df[col].dropna(), nbinsx=15,
+            x=d_df[kolom].dropna(), nbinsx=15,
             marker=dict(color=color, opacity=0.85, line=dict(width=0))
         ))
         fig.update_layout(
@@ -2048,6 +2093,7 @@ def page_destination():
             section_header("Distribusi Tingkat Persaingan")
             st.plotly_chart(hist_chart('competition_score', '#1565C0', 'Skor Persaingan'),
                             use_container_width=True, config={'displayModeBar': False})
+        
         with cd2:
             section_header("Status Pasar (Ocean)")
             oc = d_df['status_ocean'].value_counts()
