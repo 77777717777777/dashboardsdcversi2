@@ -776,7 +776,8 @@ def page_nlp():
     page_header_compact("Analisis Branding NLP", "Strategi Penamaan Hotel · Branding Alam vs Standar", "")
 
     all_dest_nlp = ['All'] + sorted(branding_df['destinasi'].dropna().unique().tolist())
-    dest_nlp = st.selectbox("🎯 Filter Destinasi", all_dest_nlp, key='nlp_dest')
+    st.markdown('<div style="font-size:11px;color:#2D6A4F;margin-bottom:3px;font-weight:600;">🎯 Filter Destinasi</div>', unsafe_allow_html=True)
+    dest_nlp = st.selectbox("Filter Destinasi", all_dest_nlp, key='nlp_dest', label_visibility='collapsed')
     bf = branding_df if dest_nlp == 'All' else branding_df[branding_df['destinasi'] == dest_nlp]
 
     nat_df  = bf[bf['Tema_Nama'] == 'Mengandung Unsur Alam']
