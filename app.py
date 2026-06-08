@@ -2260,7 +2260,7 @@ def page_strategy():
 def page_engine():
     page_header_compact("Pemodelan", "Ekonometrika Spasial · NLP · Ekosistem · Kompetisi", "")
     t1, t2, t3, t4 = st.tabs([
-        "Intelijen Kompetisi",
+        "Kompetisi Pasar",
         "Ekosistem Atraksi",
         "Analisis Branding (NLP)",
         "Ekonometrika Spasial (GWR)",
