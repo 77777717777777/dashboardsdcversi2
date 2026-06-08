@@ -795,7 +795,54 @@ def inject_css():
         border-top: 1px solid var(--border-light); /* di area konten */
         }
     }
+    /* =========================================
+       RADIO BUTTON — PETA SPASIAL (MAP LAYERS)
+       ========================================= */
+    /* Label teks radio button */
+    [data-testid="stRadio"] label p,
+    [data-testid="stRadio"] label span {
+        color: var(--text-primary) !important;
+        font-size: 12px !important;
+        font-weight: 500 !important;
+    }
 
+    /* Pilihan aktif */
+    [data-testid="stRadio"] label[data-checked="true"] p,
+    [data-testid="stRadio"] label[data-checked="true"] span {
+        color: var(--color-accent) !important;
+        font-weight: 700 !important;
+    }
+
+    /* Lingkaran radio — default (tidak dipilih): hanya garis luar */
+    [data-testid="stRadio"] [role="radio"] {
+        background-color: transparent !important;
+        border: 2px solid #74A98A !important;
+    }
+
+    /* Lingkaran radio — dipilih: merah dengan dot tengah putih */
+    [data-testid="stRadio"] [role="radio"][aria-checked="true"] {
+        background-color: #D62839 !important;
+        border: 2px solid #D62839 !important;
+    }
+
+    /* Dot putih di tengah saat dipilih */
+    [data-testid="stRadio"] [role="radio"][aria-checked="true"]::after {
+        content: '';
+        display: block;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: white;
+        margin: auto;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    [data-testid="stRadio"] [role="radio"] {
+        position: relative;
+    }
     </style>
     """
     st.markdown(css, unsafe_allow_html=True)
