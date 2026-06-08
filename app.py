@@ -330,7 +330,7 @@ def page_executive():
     # ── KPI Baris 1: 5 kolom seimbang ──────────────────────────────
     k1, k2, k3, k4, k5 = st.columns(5)
     rows1 = [
-        (k1, "Total Hotel",        f"{kpis['total_hotels']:,}",          "Jaringan Destinasi Prioritas",   'accent',  None, 'up',     ''),
+        (k1, "Total Akomodasi",        f"{kpis['total_hotels']:,}",          "Jaringan Destinasi Prioritas",   'accent',  None, 'up',     ''),
         (k2, "Destinasi",          str(kpis['total_destinations']),       "Kluster Super Prioritas",        'white',   None, 'neutral',''),
         (k3, "Rata-rata Rating",   f"{kpis['avg_rating']}",              "★ dari 5.0",                     'warning', None, 'up',     ''),
         (k4, "Total Ulasan",       f"{kpis['total_reviews']:,}",          "Sinyal Permintaan",              'accent',  None, 'up',     ''),

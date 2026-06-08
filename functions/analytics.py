@@ -317,7 +317,7 @@ def generate_ai_insights(df, dest_stats):
     insights.append({
         'type': 'success',
         'title': f"{top_opp['dest_display']} — Zona Investasi Utama",
-        'text': f"Mencatat skor peluang tertinggi secara nasional ({top_opp['avg_opportunity']:.1f}/100). Tingkat persaingan masih rendah dengan kesiapan ekosistem wisata yang baik."
+        'text': f"Mencatat skor peluang tertinggi nasional ({top_opp['avg_opportunity']:.1f}/100). Padatnya persaingan akomodasi berhasil diredam oleh tingginya permintaan pasar dan kuatnya ekosistem wisata di area ini."
     })
     
     # Insight 2: Saturation Risk
