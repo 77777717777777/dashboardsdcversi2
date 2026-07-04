@@ -61,7 +61,7 @@ def plot_opportunity_ranking(dest_stats, column, title, height=320):
         marker_color=color, opacity=0.85,
         text=df[column].round(1), textposition='outside',
         cliponaxis=False,
-        textfont=dict(color=DESIGN['secondary'], size=10)
+        textfont=dict(color='#4A6080', size=10)
     ))
     return apply_layout(fig, title='', height=height, show_legend=False)
     fig.update_xaxes(range=[0, df[column].max() * 1.2])
@@ -421,7 +421,10 @@ def plot_branding_bars(branding_df, dest_filter=None):
     if dest_filter and dest_filter != 'All':
         df = df[df['destinasi'] == dest_filter]
         
-    grp = df.groupby(['Segmen', 'Tema_Nama'])['Rata_rata_Ulasan'].mean().reset_index()
+    grp = df.groupby(['Segmen', 'Tema_Nama']).agg(
+        Skor_Popularitas_Rerata=('Skor_Popularitas_Rerata', 'mean'),
+        Rata_rata_Ulasan=('Rata_rata_Ulasan', 'mean'),
+    ).reset_index()
     
     fig = go.Figure()
     colors = {'Mengandung Unsur Alam': DESIGN['success'], 'Nama Standar': DESIGN['accent']}
@@ -434,11 +437,13 @@ def plot_branding_bars(branding_df, dest_filter=None):
             y=sub['Rata_rata_Ulasan'],
             marker_color=colors.get(tema, DESIGN['secondary']),
             text=sub['Rata_rata_Ulasan'].round(0).astype(int),
-            textposition='outside', textfont=dict(color=DESIGN['text'], size=11)
+            textposition='outside', textfont=dict(color='#4A6080', size=11)
         ))
         
     fig.update_layout(barmode='group')
-    return apply_layout(fig, height=280)
+    fig = apply_layout(fig, height=280)
+    fig.update_yaxes(title='Rata-rata Jumlah Ulasan')
+    return fig
 
 # ==========================================
 # 5. COMPETITION PAGE — ENHANCED CHARTS
@@ -485,7 +490,7 @@ def plot_competition_ranking(dest_stats, height=320):
         range=[0, df['avg_competition'].max() * 1.18],
     )
     fig.update_yaxes(title='')
-    fig.update_layout(margin=dict(l=10, r=60, t=20, b=40))
+    fig.update_layout(margin=dict(l=10, r=60, t=3, b=20))
     return fig
 
 

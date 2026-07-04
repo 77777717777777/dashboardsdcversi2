@@ -113,8 +113,8 @@ def get_file_path(filename):
     return None
 
 def load_main_data():
-    """Load Master Data (DATASET_INVESTOR_READY_FINAL.csv)"""
-    file_path = get_file_path("DATASET_INVESTOR_READY_FINAL.csv")
+    """Load Master Data (DATASET_INVESTOR_READY_FINAL_MAPPED.csv)"""
+    file_path = get_file_path("DATASET_INVESTOR_READY_FINAL_MAPPED.csv")
     
     if not file_path:
         st.error("❌ File DATASET_INVESTOR_READY_FINAL.csv tidak ditemukan di folder data/")
@@ -176,40 +176,69 @@ def load_main_data():
         # Alias nama kolom untuk mempermudah chart
         if 'destinasi' in df.columns:
             df['dest_display'] = df['destinasi'].map(DEST_DISPLAY).fillna(df['destinasi'])
-        
+        # --- REVISI: Standardisasi Penentuan Status Hotel Premium ---
+        if 'kasta_bintang' in df.columns:
+            # Buat teks menjadi lowercase agar pencocokan tidak sensitif huruf besar/kecil
+            kasta_lower = df['kasta_bintang'].astype(str).str.lower()
+            
+            # Hotel dianggap premium jika mengandung kata kunci bintang 4, bintang 5, resort, atau luxury
+            df['is_premium'] = kasta_lower.apply(
+                lambda x: 1 if (
+                    '5-star' in x or 
+                    '4-star' in x or 
+                    'bintang 5' in x or 
+                    'bintang 4' in x or 
+                    'resor' in x or 
+                    'luxury' in x
+                ) else 0
+            )
+        elif 'is_premium' in df.columns:
+            df['is_premium'] = pd.to_numeric(df['is_premium'], errors="coerce").fillna(0).astype(int)
+        else:
+            df['is_premium'] = 0
         return df.reset_index(drop=True)
     except Exception as e:
         st.error(f"❌ Error memuat data utama: {e}")
         traceback.print_exc()
         return pd.DataFrame()
 
-def load_branding_data():
-    """Load data NLP (Insight_Tahap3_Branding.csv)"""
-    file_path = get_file_path("Insight_Tahap3_Branding.csv")
-    if not file_path:
-        return pd.DataFrame()
-    
-    try:
-        df = pd.read_csv(file_path, sep=None, engine="python")
-        df.columns = df.columns.str.strip()
-        for col in ["Jumlah_Akomodasi", "Rata_rata_Ulasan"]:
-            if col in df.columns:
-                df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
-        return df
-    except Exception:
+def compute_branding_stats(df):
+    """Replikasi pivot_insight dari Script Tahap 4, dihitung langsung dari dataset utama."""
+    needed = ['destinasi', 'Segmen', 'Tema_Nama', 'jumlah_ulasan', 'rating',
+              'log_ulasan_x_rating', 'nama_hotel']
+    if df.empty or not all(c in df.columns for c in needed):
         return pd.DataFrame()
 
-def load_top3_investment_data():
-    """Load data Top 3 Investasi per Destinasi (Tabel_Top3_Investasi_FINAL.csv)"""
-    file_path = get_file_path("Tabel_Top3_Investasi_FINAL.csv")
-    if not file_path:
+    grp = df.groupby(['destinasi', 'Segmen', 'Tema_Nama']).agg(
+        Jumlah_Akomodasi=('nama_hotel', 'count'),
+        Rata_rata_Ulasan=('jumlah_ulasan', 'mean'),
+        Rata_rata_Rating=('rating', 'mean'),
+        Skor_Popularitas_Rerata=('log_ulasan_x_rating', 'mean'),
+    ).reset_index()
+
+    grp['Rata_rata_Ulasan'] = grp['Rata_rata_Ulasan'].round(0).astype(int)
+    grp['Rata_rata_Rating'] = grp['Rata_rata_Rating'].round(2)
+    grp['Skor_Popularitas_Rerata'] = grp['Skor_Popularitas_Rerata'].round(3)
+    return grp
+
+def compute_top3_investment(df):
+    """Replikasi tabel top3 dari Script Tahap 4, dihitung langsung dari dataset utama."""
+    needed = ['destinasi', 'rekomendasi_investasi', 'opportunity_score']
+    if df.empty or not all(c in df.columns for c in needed):
         return pd.DataFrame()
-    try:
-        df = pd.read_csv(file_path, sep=None, engine="python", encoding="utf-8-sig")
-        df.columns = df.columns.str.strip()
-        return df
-    except Exception:
-        return pd.DataFrame()
+
+    top3 = (
+        df[df['rekomendasi_investasi'] == 'Sangat Direkomendasikan']
+        .sort_values(['destinasi', 'opportunity_score'], ascending=[True, False])
+        .groupby('destinasi')
+        .head(3)
+    )
+    cols = ['destinasi', 'nama_hotel', 'market_segment', 'opportunity_score',
+            'demand_score', 'quality_score', 'jarak_ke_atraksi_terdekat_km',
+            'jumlah_atraksi_radius_5km', 'latitude', 'longitude',
+            'jumlah_ulasan', 'rating', 'log_ulasan_x_rating']
+    cols = [c for c in cols if c in top3.columns]
+    return top3[cols].reset_index(drop=True)
     
 # ==========================================
 # FILTER & AGGREGATION
