@@ -495,19 +495,26 @@ def inject_css():
         border-left: 3px solid var(--color-accent);
     }
 
-    .alert-icon { font-size: 16px; padding-top: 1px; }
-    .alert-content h5 {
-        margin: 0 0 3px 0;
-        font-size: 12px;
-        font-weight: 700;
-        color: var(--color-navy);
-        font-family: 'Plus Jakarta Sans', sans-serif !important;
+    .alert-icon { font-size:16px; padding-top:1px; line-height:1; }
+    .alert-content { line-height:1; }
+
+    .alert-content h5,
+    [data-testid="stMarkdownContainer"] .alert-content h5 {
+        margin: 0 0 2px 0 !important;
+        padding: 0 !important;
+        font-size:12px !important;
+        font-weight:700 !important;
+        color:var(--color-navy) !important;
+        font-family:'Plus Jakarta Sans',sans-serif !important;
+        line-height:1.3 !important;
     }
-    .alert-content p {
-        margin: 0;
-        font-size: 11px;
-        color: var(--text-secondary);
-        line-height: 1.5;
+    .alert-content p,
+    [data-testid="stMarkdownContainer"] .alert-content p {
+        margin: 0 !important;
+        padding: 0 !important;
+        font-size:11px !important;
+        color:var(--text-secondary) !important;
+        line-height:1.55 !important;
     }
 
     /* =========================================
@@ -842,6 +849,18 @@ def inject_css():
 
     [data-testid="stRadio"] [role="radio"] {
         position: relative;
+    }
+
+    /* =========================================
+       SEMBUNYIKAN ANCHOR LINK ICON DI HEADING
+       (Streamlit otomatis nambah ikon link di h1-h6)
+       ========================================= */
+    h1 a, h2 a, h3 a, h4 a, h5 a, h6 a {
+        display: none !important;
+    }
+
+    [data-testid="stHeaderActionElements"] {
+        display: none !important;
     }
     </style>
     """

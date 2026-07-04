@@ -23,7 +23,7 @@ DEST_COORDS = {
 # HELPER: POPUP HTML GENERATOR
 # ==========================================
 def create_popup_html(row):
-    """Membangun tooltip popup hotel bergaya Premium SaaS"""
+    """Membangun tooltip popup hotel — konsisten dengan tema dashboard (hijau navy)"""
     name = row.get('nama_hotel', 'Unknown Hotel')
     tipe = row.get('jenis', 'Akomodasi')
     rating = row.get('rating', 0)
@@ -37,30 +37,32 @@ def create_popup_html(row):
     jarak_atr = row.get('jarak_ke_atraksi_terdekat_km', 0)
     eco_score = row.get('ecosystem_score', 0)
     
-    rec_color = "#22C55E" if "Sangat" in rec else "#00D4FF" if "Direkomendasikan" in rec else "#F59E0B"
-    ocean_color = "#EF4444" if "Red" in ocean else "#00D4FF"
+    # Palet warna konsisten dengan dashboard
+    rec_color = "#1A7A4A" if "Sangat" in rec else "#1D5FAD" if "Direkomendasikan" in rec else "#B8680A"
+    ocean_color = "#C0392B" if "Red" in ocean else "#1D5FAD"
+    opp_color = "#1A7A4A" if opp >= 60 else "#B8680A" if opp >= 40 else "#C0392B"
     
     html = f"""
-    <div style="font-family:'Inter', sans-serif; width: 280px; color: #333;">
-        <div style="background: #061427; padding: 12px; border-radius: 8px 8px 0 0; color: white;">
-            <h4 style="margin:0 0 4px 0; font-size:14px; color: #00D4FF;">{name}</h4>
-            <div style="font-size:11px; color:#A6B4C8;">{tipe} · ⭐ {rating} ({ulasan:,.0f} ulasan)</div>
+    <div style="font-family:'DM Sans', sans-serif; width: 270px; color: #1B4332;">
+        <div style="background: linear-gradient(135deg,#1B4332,#2D6A4F); padding: 14px 16px; border-radius: 10px 10px 0 0; color: white;">
+            <h4 style="margin:0 0 3px 0; font-size:14px; font-weight:700; color: #FFFFFF; font-family:'Plus Jakarta Sans',sans-serif;">{name}</h4>
+            <div style="font-size:11px; color:rgba(255,255,255,0.75);">{tipe} · ⭐ {rating} ({ulasan:,.0f} ulasan)</div>
         </div>
-        <div style="padding: 12px; background: #f8fafc; border-radius: 0 0 8px 8px;">
-            <div style="margin-bottom: 8px;">
-                <span style="font-size:10px; color:#64748B;">INVESTMENT SCORE</span><br>
-                <b style="font-size:18px; color: #22C55E;">{opp:.1f}</b> 
-                <span style="background:{rec_color}; color:white; padding:2px 6px; border-radius:4px; font-size:9px; font-weight:bold; margin-left:4px;">{rec[:10]}</span>
+        <div style="padding: 14px 16px; background: #FFFFFF; border-radius: 0 0 10px 10px; border:1px solid #D8EDE4; border-top:none;">
+            <div style="margin-bottom: 10px;">
+                <span style="font-size:9px; color:#74A98A; font-weight:600; letter-spacing:0.5px; text-transform:uppercase;">Investment Score</span><br>
+                <b style="font-size:20px; color:{opp_color}; font-family:'Plus Jakarta Sans',sans-serif;">{opp:.1f}</b>
+                <span style="background:{rec_color}; color:white; padding:2px 8px; border-radius:20px; font-size:9px; font-weight:700; margin-left:6px;">{rec}</span>
             </div>
-            <div style="margin-bottom: 8px;">
-                <span style="font-size:10px; color:#64748B;">MARKET STATUS</span><br>
+            <div style="margin-bottom: 10px;">
+                <span style="font-size:9px; color:#74A98A; font-weight:600; letter-spacing:0.5px; text-transform:uppercase;">Market Status</span><br>
                 <b style="font-size:13px; color:{ocean_color};">{ocean}</b>
             </div>
-            <hr style="border:0; border-top:1px solid #e2e8f0; margin: 8px 0;">
-            <div style="font-size:11px;">
-                <span style="color:#64748B;">🌿 Atraksi Terdekat:</span><br>
-                <b>{atraksi}</b> ({jarak_atr:.1f} km)<br>
-                <span style="color:#64748B;">Ecosystem Score:</span> <b>{eco_score:.1f}</b>
+            <hr style="border:0; border-top:1px solid #D8EDE4; margin: 10px 0;">
+            <div style="font-size:11px; color:#2D6A4F; line-height:1.6;">
+                <span style="color:#74A98A; font-weight:600;">Atraksi Terdekat:</span><br>
+                <b style="color:#1B4332;">{atraksi}</b> ({jarak_atr:.1f} km)<br>
+                <span style="color:#74A98A;">Ecosystem Score:</span> <b style="color:#1B4332;">{eco_score:.1f}</b>
             </div>
         </div>
     </div>

@@ -113,8 +113,8 @@ def get_file_path(filename):
     return None
 
 def load_main_data():
-    """Load Master Data (DATASET_INVESTOR_READY_FINAL_MAPPED.csv)"""
-    file_path = get_file_path("DATASET_INVESTOR_READY_FINAL_MAPPED.csv")
+    """Load Master Data (DATASET_INVESTOR_READY_FINAL_FIX.csv)"""
+    file_path = get_file_path("DATASET_INVESTOR_READY_FINAL_FIX.csv")
     
     if not file_path:
         st.error("❌ File DATASET_INVESTOR_READY_FINAL.csv tidak ditemukan di folder data/")
@@ -177,29 +177,93 @@ def load_main_data():
         if 'destinasi' in df.columns:
             df['dest_display'] = df['destinasi'].map(DEST_DISPLAY).fillna(df['destinasi'])
         # --- REVISI: Standardisasi Penentuan Status Hotel Premium ---
-        if 'kasta_bintang' in df.columns:
-            # Buat teks menjadi lowercase agar pencocokan tidak sensitif huruf besar/kecil
+        # --- REVISI: Prioritaskan is_premium asli dari file, fallback ke kasta_bintang ---
+        if 'is_premium' in df.columns:
+            df['is_premium'] = pd.to_numeric(df['is_premium'], errors="coerce").fillna(0).astype(int)
+        
+        elif 'kasta_bintang' in df.columns:
             kasta_lower = df['kasta_bintang'].astype(str).str.lower()
-            
-            # Hotel dianggap premium jika mengandung kata kunci bintang 4, bintang 5, resort, atau luxury
             df['is_premium'] = kasta_lower.apply(
                 lambda x: 1 if (
-                    '5-star' in x or 
-                    '4-star' in x or 
-                    'bintang 5' in x or 
-                    'bintang 4' in x or 
-                    'resor' in x or 
-                    'luxury' in x
+                    '5-star' in x or '4-star' in x or 
+                    'bintang 5' in x or 'bintang 4' in x or 
+                    'resor' in x or 'luxury' in x
                 ) else 0
             )
-        elif 'is_premium' in df.columns:
-            df['is_premium'] = pd.to_numeric(df['is_premium'], errors="coerce").fillna(0).astype(int)
+
         else:
             df['is_premium'] = 0
+        #if 'kasta_bintang' in df.columns:
+        #    # Buat teks menjadi lowercase agar pencocokan tidak sensitif huruf besar/kecil
+        #    kasta_lower = df['kasta_bintang'].astype(str).str.lower()
+            
+        #    # Hotel dianggap premium jika mengandung kata kunci bintang 4, bintang 5, resort, atau luxury
+        #    df['is_premium'] = kasta_lower.apply(
+        #        lambda x: 1 if (
+        #            '5-star' in x or 
+        #            '4-star' in x or 
+        #            'bintang 5' in x or 
+        #            'bintang 4' in x or 
+        #            'resor' in x or 
+        #            'luxury' in x
+        #        ) else 0
+        #    )
+        #elif 'is_premium' in df.columns:
+        #    df['is_premium'] = pd.to_numeric(df['is_premium'], errors="coerce").fillna(0).astype(int)
+        #else:
+        #    df['is_premium'] = 0
         return df.reset_index(drop=True)
     except Exception as e:
         st.error(f"❌ Error memuat data utama: {e}")
         traceback.print_exc()
+        return pd.DataFrame()
+
+def _smart_read_tabular(file_path):
+    """Coba baca file sebagai Excel dulu, fallback ke CSV/TSV kalau gagal."""
+    # 1. Coba sebagai file Excel asli
+    for engine in ['xlrd', 'openpyxl']:
+        try:
+            return pd.read_excel(file_path, engine=engine)
+        except Exception:
+            pass
+    # 2. Fallback: mungkin sebenarnya CSV/TSV dengan ekstensi .xls
+    for sep in ['\t', ',', ';']:
+        try:
+            df = pd.read_csv(file_path, sep=sep, engine='python', encoding='utf-8-sig')
+            if df.shape[1] > 1:  # pastikan separator-nya benar (bukan 1 kolom raksasa)
+                return df
+        except Exception:
+            pass
+    raise ValueError(f"Tidak bisa membaca file: {file_path}")
+
+
+def load_top3_data():
+    """Load Tabel_Top3_Investasi_FINAL (format bisa Excel atau CSV/TSV)"""
+    file_path = get_file_path("Tabel_Top3_Investasi_FINAL.xls")
+    if not file_path:
+        st.warning("⚠️ File Tabel_Top3_Investasi_FINAL.xls tidak ditemukan.")
+        return pd.DataFrame()
+    try:
+        df = _smart_read_tabular(file_path)
+        df.columns = df.columns.str.strip().str.replace("\ufeff", "", regex=False)
+        return df
+    except Exception as e:
+        st.error(f"❌ Error memuat Tabel_Top3_Investasi_FINAL.xls: {e}")
+        return pd.DataFrame()
+
+
+def load_branding_data():
+    """Load Insight_Tahap4_Branding (format bisa Excel atau CSV/TSV)"""
+    file_path = get_file_path("Insight_Tahap4_Branding.xls")
+    if not file_path:
+        st.warning("⚠️ File Insight_Tahap4_Branding.xls tidak ditemukan.")
+        return pd.DataFrame()
+    try:
+        df = _smart_read_tabular(file_path)
+        df.columns = df.columns.str.strip().str.replace("\ufeff", "", regex=False)
+        return df
+    except Exception as e:
+        st.error(f"❌ Error memuat Insight_Tahap4_Branding.xls: {e}")
         return pd.DataFrame()
 
 def compute_branding_stats(df):

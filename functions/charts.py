@@ -171,7 +171,7 @@ def plot_investment_matrix(dest_stats):
 # ==========================================
 # 3. SPATIAL ECONOMETRICS (GWR & MORAN)
 # ==========================================
-def plot_gwr_coefficients(df, coef_col, title):
+def plot_gwr_coefficients(df, coef_col, title, height=300):
     """Boxplot distribusi GWR untuk membuktikan Spasial Heterogenitas"""
     if df.empty or coef_col not in df.columns: return go.Figure()
     
@@ -189,7 +189,7 @@ def plot_gwr_coefficients(df, coef_col, title):
         ))
     
     fig.add_vline(x=0, line=dict(color=DESIGN['danger'], width=2, dash='dash'))
-    fig = apply_layout(fig, height=350, show_legend=False)
+    fig = apply_layout(fig, height=height, show_legend=False)
     fig.update_xaxes(title="Coefficient Value")
     return fig
     fig.update_xaxes(tickfont=dict(color=DESIGN['secondary']))
@@ -414,7 +414,6 @@ def plot_grouped_bar(df, x_col, y_cols, labels, colors, height=300):
     return apply_layout(fig, height=height, show_legend=True)
 
 def plot_branding_bars(branding_df, dest_filter=None):
-    """Grouped Bar Khusus untuk NLP Tahap 3"""
     if branding_df.empty: return go.Figure()
     
     df = branding_df.copy()
@@ -422,27 +421,27 @@ def plot_branding_bars(branding_df, dest_filter=None):
         df = df[df['destinasi'] == dest_filter]
         
     grp = df.groupby(['Segmen', 'Tema_Nama']).agg(
-        Skor_Popularitas_Rerata=('Skor_Popularitas_Rerata', 'mean'),
-        Rata_rata_Ulasan=('Rata_rata_Ulasan', 'mean'),
+        Median_Popularitas=('Median_Popularitas', 'mean'),
+        Median_Ulasan=('Median_Ulasan', 'mean'),
     ).reset_index()
     
     fig = go.Figure()
     colors = {'Mengandung Unsur Alam': DESIGN['success'], 'Nama Standar': DESIGN['accent']}
     
-    for tema in ['Nama Standar', 'Mengandung Unsur Alam']: # Urutkan agar standar di kiri
+    for tema in ['Nama Standar', 'Mengandung Unsur Alam']:
         sub = grp[grp['Tema_Nama'] == tema]
         fig.add_trace(go.Bar(
             name='Nature Branding' if 'Alam' in tema else 'Standard Naming',
             x=sub['Segmen'].apply(lambda x: x.split('(')[0].strip()),
-            y=sub['Rata_rata_Ulasan'],
+            y=sub['Median_Popularitas'],
             marker_color=colors.get(tema, DESIGN['secondary']),
-            text=sub['Rata_rata_Ulasan'].round(0).astype(int),
+            text=sub['Median_Ulasan'].round(0).astype(int),
             textposition='outside', textfont=dict(color='#4A6080', size=11)
         ))
         
     fig.update_layout(barmode='group')
     fig = apply_layout(fig, height=280)
-    fig.update_yaxes(title='Rata-rata Jumlah Ulasan')
+    fig.update_yaxes(title='Median Skor Popularitas')
     return fig
 
 # ==========================================
@@ -594,62 +593,63 @@ def plot_investment_matrix_enhanced(dest_stats, height=320):
 
 def plot_gwr_bar(df, height=320):
     """
-    Horizontal bar GWR koefisien kompetitor per destinasi.
-    Hijau = aglomerasi positif, Merah = kompetisi destruktif.
-    Dengan referensi garis nol dan anotasi interpretasi.
+    Horizontal bar koefisien kompetitor per destinasi.
+    Warna dibedakan berdasarkan jenis model (GWR vs OLS/Spatial Lag)
+    supaya tidak menyiratkan semua destinasi diestimasi secara spasial lokal.
     """
     if 'koef_saingan_radius_1km' not in df.columns:
         return go.Figure()
 
     coef_d = (
-        df.groupby('dest_display')['koef_saingan_radius_1km']
-        .mean()
+        df.groupby('dest_display')
+        .agg(
+            Koefisien=('koef_saingan_radius_1km', 'mean'),
+            model=('model_dipakai', 'first'),
+        )
         .reset_index()
-        .rename(columns={'koef_saingan_radius_1km': 'Koefisien'})
         .sort_values('Koefisien')
     )
 
-    colors = [
-        '#1A7A4A' if v >= 0 else '#C0392B'
-        for v in coef_d['Koefisien']
-    ]
+    # Warna: hijau/merah tua = GWR asli (lokal), hijau/merah muda = OLS/Spatial Lag (global)
+    def get_color(row):
+        is_local = 'GWR' in str(row['model'])
+        if row['Koefisien'] >= 0:
+            return '#1A7A4A' if is_local else '#86C9A5'   # hijau tua vs hijau muda
+        else:
+            return '#C0392B' if is_local else '#E8A0A0'   # merah tua vs merah muda
+
+    colors = coef_d.apply(get_color, axis=1)
 
     fig = go.Figure(go.Bar(
         x=coef_d['Koefisien'],
         y=coef_d['dest_display'],
         orientation='h',
-        marker=dict(color=colors, opacity=0.85, line=dict(width=0)),
-        text=coef_d['Koefisien'].round(3),
+        marker=dict(color=colors, opacity=0.9, line=dict(width=0)),
+        text=[f"{v:.3f}" for v in coef_d['Koefisien']],
         textposition='outside',
         textfont=dict(color='#4A6080', size=10, family='DM Sans'),
-        hovertemplate='<b>%{y}</b><br>Koefisien: %{x:.4f}<extra></extra>',
+        customdata=coef_d['model'],
+        hovertemplate='<b>%{y}</b><br>Koefisien: %{x:.4f}<br>Model: %{customdata}<extra></extra>',
         cliponaxis=False,
     ))
 
-    # Garis referensi nol
-    fig.add_vline(
-        x=0,
-        line=dict(color='#B0C8E0', width=1.5, dash='solid'),
-    )
+    fig.add_vline(x=0, line=dict(color='#B0C8E0', width=1.5, dash='solid'))
 
-    # Anotasi kanan-kiri garis nol
     x_range = coef_d['Koefisien'].abs().max()
     fig.add_annotation(
         x=x_range * 0.6, y=len(coef_d) - 0.3,
-        text='Aglomerasi Positif',
-        showarrow=False,
+        text='Aglomerasi Positif', showarrow=False,
         font=dict(size=8, color='#1A7A4A', family='DM Sans'),
     )
     fig.add_annotation(
         x=-x_range * 0.6, y=len(coef_d) - 0.3,
-        text='Kompetisi Destruktif',
-        showarrow=False,
+        text='Kompetisi Destruktif', showarrow=False,
         font=dict(size=8, color='#C0392B', family='DM Sans'),
     )
 
     fig = apply_layout(fig, height=height, show_legend=False)
     fig.update_xaxes(
-        title='Nilai Koefisien GWR',
+        title='Nilai Koefisien',
         title_font=dict(size=10, color='#4A6080'),
         range=[-x_range * 1.3, x_range * 1.3],
     )
