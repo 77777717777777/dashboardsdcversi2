@@ -12,6 +12,9 @@ import numpy as np
 import plotly.graph_objects as go
 import warnings
 warnings.filterwarnings('ignore')
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # ── PAGE CONFIG (HARUS PALING PERTAMA) ──────────────────────────────
 st.set_page_config(
