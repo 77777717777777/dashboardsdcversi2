@@ -400,48 +400,87 @@ def get_national_kpis(df):
 # INTELLIGENCE GENERATORS
 # ==========================================
 def generate_ai_insights(df, dest_stats):
-    """Men-generate teks alert otomatis bergaya AI berdasarkan data aktual"""
     insights = []
-    
     if dest_stats.empty: return insights
-    
-    # Insight 1: Best Emerging Market
+
+    med_comp = dest_stats['avg_competition'].median()
+    med_demand = dest_stats['avg_demand'].median()
+
+    # Insight 1: Zona Peluang Terbaik (selalu tampil — prioritas utama)
     top_opp = dest_stats.nlargest(1, 'avg_opportunity').iloc[0]
+    if top_opp['avg_competition'] > med_comp and top_opp['avg_demand'] > med_demand:
+        text = (
+            f"Mencatat skor peluang investasi tertinggi secara nasional ({top_opp['avg_opportunity']:.1f}/100). "
+            f"Tingkat persaingannya memang tergolong tinggi, namun hal ini diimbangi oleh permintaan wisatawan "
+            f"yang juga tinggi serta ekosistem wisata yang sudah terbangun dengan baik."
+        )
+    elif top_opp['avg_competition'] > med_comp:
+        text = (
+            f"Mencatat skor peluang investasi tertinggi secara nasional ({top_opp['avg_opportunity']:.1f}/100), "
+            f"meskipun tingkat persaingannya cukup tinggi. Keunggulan destinasi ini terletak pada kekuatan "
+            f"ekosistem wisatanya, sehingga daya tariknya tidak hanya ditentukan oleh jumlah akomodasi."
+        )
+    else:
+        text = (
+            f"Mencatat skor peluang investasi tertinggi secara nasional ({top_opp['avg_opportunity']:.1f}/100). "
+            f"Tingkat persaingan yang masih relatif rendah, ditambah ekosistem wisata yang sudah kuat, "
+            f"menjadikan destinasi ini prospektif untuk investasi pada tahap awal."
+        )
     insights.append({
         'type': 'success',
         'title': f"{top_opp['dest_display']} — Zona Investasi Utama",
-        'text': f"Mencatat skor peluang tertinggi nasional ({top_opp['avg_opportunity']:.1f}/100). Padatnya persaingan akomodasi berhasil diredam oleh tingginya permintaan pasar dan kuatnya ekosistem wisata di area ini."
+        'text': text
     })
-    
-    # Insight 2: Saturation Risk
+
+    # Insight 2: Risiko Kejenuhan (prioritas kedua — cuma tampil kalau memang jauh di atas median)
     top_comp = dest_stats.nlargest(1, 'avg_competition').iloc[0]
-    if top_comp['avg_competition'] > 65:
+    if top_comp['avg_competition'] > med_comp * 1.15:
         insights.append({
             'type': 'danger',
             'title': f"{top_comp['dest_display']} — Risiko Kejenuhan Pasar",
-            'text': f"Skor persaingan tinggi ({top_comp['avg_competition']:.1f}%) menunjukkan pasar sudah sangat padat. Pembangunan akomodasi kelas menengah di sini tidak disarankan."
+            'text': (
+                f"Memiliki tingkat persaingan tertinggi secara nasional ({top_comp['avg_competition']:.1f}%). "
+                f"Pembangunan akomodasi segmen menengah tanpa diferensiasi produk yang jelas berisiko "
+                f"sulit bersaing di pasar yang sudah jenuh ini."
+            )
         })
-        
-    # Insight 3: Eco/Nature Branding Potential
+
+    # Insight 3: Destinasi dengan Permintaan Tertinggi
+    top_demand = dest_stats.nlargest(1, 'avg_demand').iloc[0]
+    if top_demand['avg_competition'] < med_comp:
+        text = (
+            f"Mencatat tingkat permintaan wisatawan tertinggi secara nasional ({top_demand['avg_demand']:.1f}), "
+            f"dengan tingkat persaingan akomodasi yang masih relatif rendah. Kombinasi ini menunjukkan "
+            f"bahwa suplai akomodasi belum sebanding dengan besarnya minat wisatawan terhadap destinasi ini."
+        )
+    else:
+        text = (
+            f"Mencatat tingkat permintaan wisatawan tertinggi secara nasional ({top_demand['avg_demand']:.1f}). "
+            f"Meskipun persaingan akomodasi di destinasi ini juga tergolong tinggi, besarnya minat wisatawan "
+            f"tetap menjadikannya salah satu pasar yang layak dipertimbangkan."
+        )
+    insights.append({
+        'type': 'info',
+        'title': f"{top_demand['dest_display']} — Permintaan Wisatawan Tertinggi",
+        'text': text
+    })
+
+    # Insight 4: Peluang Branding Alam (prioritas terakhir — cadangan kalau slot masih kosong)
     if 'is_nature_view' in df.columns:
         nature_pct = df['is_nature_view'].mean() * 100
         if nature_pct < 30:
             insights.append({
                 'type': 'warning',
-                'title': 'Potensi Branding Alam Belum Dimanfaatkan',
-                'text': f"Hanya {nature_pct:.1f}% properti yang menggunakan nama atau tema berbasis alam. Peluang besar bagi pendatang baru untuk merebut segmen wisata alam premium."
+                'title': 'Potensi Branding Alam Belum Termanfaatkan',
+                'text': (
+                    f"Hanya {nature_pct:.1f}% akomodasi yang menggunakan nama atau tema bertema alam. "
+                    f"Kondisi ini membuka peluang bagi investor baru untuk mengisi segmen wisata alam "
+                    f"yang belum banyak digarap oleh pemain eksisting."
+                )
             })
-            
-    # Insight 4: Ecosystem
-    if 'avg_ecosystem' in dest_stats.columns:
-        top_eco = dest_stats.nlargest(1, 'avg_ecosystem').iloc[0]
-        insights.append({
-            'type': 'info',
-            'title': f"{top_eco['dest_display']} — Jaringan Atraksi Terkuat",
-            'text': f"Memiliki kesiapan ekosistem terbaik secara nasional dengan skor {top_eco['avg_ecosystem']:.1f}. Kepadatan atraksi wisata di sini menjadi pendorong permintaan yang kuat."
-        })
 
-    return insights
+    # ── Batasi jadi maksimal 3 poin untuk Ringkasan Utama ──
+    return insights[:3]
 
 def get_moran_i_simulation(df):
     """

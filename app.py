@@ -578,54 +578,18 @@ def page_competition():
 
     spacer(20)
 
-    # ── BARIS 1: Matrix + GWR ─────────────────────────────────────
+    # ── BARIS 1: Matriks Risiko vs Peluang + 5 Destinasi Blue Ocean ──
     c1, c2 = st.columns(2)
 
     with c1:
         section_header("Matriks Risiko vs Peluang", "Persaingan vs Peluang Investasi")
         fig = plot_investment_matrix_enhanced(dest_stats)
-        fig.update_traces(
-            mode='markers',
-            textposition=None,
-        )
+        fig.update_traces(mode='markers', textposition=None)
         st.plotly_chart(fig, width="stretch", config={'displayModeBar': False})
 
     with c2:
-        section_header(
-            "Efek Kepadatan Kompetitor per Destinasi",
-            "Warna gelap = estimasi lokal (GWR/GWR Parsial) · Warna muda = nilai global satu destinasi (OLS/Spatial Lag)"
-        )
-        if 'koef_saingan_radius_1km' in df.columns:
-            fig = plot_gwr_bar(df)
-            st.plotly_chart(fig, width="stretch", config={'displayModeBar': False})
-        #    st.markdown(
-        #    '<div style="display:flex;gap:16px;justify-content:center;margin-top:6px;font-size:10px;color:#64748B;">'
-        #    '<div style="display:flex;align-items:center;gap:5px;">'
-        #    '<div style="width:12px;height:8px;background:#1A7A4A;border-radius:2px;"></div>Lokal (GWR) — positif</div>'
-        #    '<div style="display:flex;align-items:center;gap:5px;">'
-        #    '<div style="width:12px;height:8px;background:#86C9A5;border-radius:2px;"></div>Global (OLS/SLM) — positif</div>'
-        #    '<div style="display:flex;align-items:center;gap:5px;">'
-        #    '<div style="width:12px;height:8px;background:#C0392B;border-radius:2px;"></div>Lokal (GWR) — negatif</div>'
-        #    '<div style="display:flex;align-items:center;gap:5px;">'
-        #    '<div style="width:12px;height:8px;background:#E8A0A0;border-radius:2px;"></div>Global (OLS/SLM) — negatif</div>'
-        #    '</div>',
-        #    unsafe_allow_html=True
-        #)
-    
-    
-    spacer(14)
-
-    # ── BARIS 2: Peringkat Persaingan + Blue Ocean List ───────────
-    c3, c4 = st.columns(2)
-
-    with c3:
-        section_header("Peringkat Persaingan", "Per Destinasi")
-        fig = plot_competition_ranking(dest_stats)
-        st.plotly_chart(fig, width="stretch", config={'displayModeBar': False})
-
-    with c4:
-        section_header("5 Destinasi dengan Hotel Blue Ocean", 
-                       "Persaingan Terendah · Jumlah hotel Blue Ocean ≠ besarnya peluang")
+        section_header("5 Destinasi dengan Akomodasi Blue Ocean",
+                       "Persaingan Terendah · Jumlah akomodasi Blue Ocean ≠ besarnya peluang")
         spacer(5)
         for _, row in dest_stats.nsmallest(5, 'avg_competition').iterrows():
             opp_pct = row.get('avg_opportunity', 100 - row['avg_competition'])
@@ -653,17 +617,66 @@ def page_competition():
             unsafe_allow_html=True
         )
 
-    spacer(14)
+    spacer(20)
 
-    st.markdown(insight_html(
-        "Temuan Strategis: Efek Aglomerasi",
-        "Destinasi dengan koefisien GWR positif menunjukkan <strong style='color:#1A7A4A'>efek aglomerasi</strong> — "
-        "pengelompokan akomodasi justru meningkatkan lalu lintas wisata secara keseluruhan. "
-        "Koefisien negatif mengindikasikan <strong style='color:#C0392B'>persaingan destruktif</strong> "
-        "yang menekan kinerja seluruh pemain di area tersebut. "
-        "Prioritaskan investasi di destinasi dengan koefisien positif untuk probabilitas keberhasilan lebih tinggi.",
-        'info'
-    ), unsafe_allow_html=True)
+    # ── BARIS 2: Efek Aglomerasi (GWR) + Temuan Strategis ──────
+    c3, c4 = st.columns(2)
+
+    with c3:
+        section_header("Efek Aglomerasi (GWR)", "Koefisien Kompetitor per Destinasi")
+        if 'koef_saingan_radius_1km' in df.columns:
+            fig = plot_gwr_bar(df, height=290)
+            st.plotly_chart(fig, width="stretch", config={'displayModeBar': False})
+            st.markdown(
+                '<div style="display:flex;gap:5px;justify-content:center;flex-wrap:wrap;'
+                'margin-top:-35px;font-size:9px;color:#94A3B8;position:relative;z-index:10;">' # ← Ubah di sini
+                '<div style="display:flex;align-items:center;gap:4px;">'
+                '<div style="width:9px;height:9px;background:#1A7A4A;border-radius:2px;"></div>'
+                'Lokal (GWR) — positif</div>'
+                '<div style="display:flex;align-items:center;gap:4px;">'
+                '<div style="width:9px;height:9px;background:#86C9A5;border-radius:2px;"></div>'
+                'Global (OLS/SLM) — positif</div>'
+                '<div style="display:flex;align-items:center;gap:4px;">'
+                '<div style="width:9px;height:9px;background:#C0392B;border-radius:2px;"></div>'
+                'Lokal (GWR) — negatif</div>'
+                '<div style="display:flex;align-items:center;gap:4px;">'
+                '<div style="width:9px;height:9px;background:#E8A0A0;border-radius:2px;"></div>'
+                'Global (OLS/SLM) — negatif</div>'
+                '</div>',
+                unsafe_allow_html=True
+            )
+
+    with c4:
+        section_header("Temuan Strategis: Efek Aglomerasi", "Interpretasi Koefisien Kompetitor")
+
+        dest_level_coef = df.dropna(subset=['koef_saingan_radius_1km']).groupby('destinasi')['koef_saingan_radius_1km'].mean()
+        top_pos_dest = dest_level_coef.idxmax()
+        top_pos_val  = dest_level_coef.max()
+        top_neg_dest = dest_level_coef.idxmin()
+        top_neg_val  = dest_level_coef.min()
+        pct_positif  = (dest_level_coef > 0).mean() * 100
+
+        st.markdown(
+            f'<div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;'
+            f'padding:18px 20px;min-height:290px;box-sizing:border-box;">'
+            f'<div style="font-size:12px;color:#334155;line-height:1.8;text-align:justify;">'
+            f'Koefisien positif pada model GWR mengindikasikan adanya <b>efek aglomerasi</b>, '
+            f'yaitu kondisi ketika pengelompokan akomodasi di suatu area justru meningkatkan '
+            f'kunjungan wisatawan secara keseluruhan. Sebaliknya, koefisien negatif menunjukkan '
+            f'<b>persaingan destruktif</b>, di mana penambahan hotel baru justru menekan kinerja '
+            f'seluruh pemain yang sudah ada di area tersebut.'
+            f'Dari {len(dest_level_coef)} destinasi yang dianalisis, sebanyak <b style="color:#1A7A4A">'
+            f'{pct_positif:.0f}%</b> menunjukkan koefisien positif. Efek aglomerasi paling kuat '
+            f'ditemukan di <b style="color:#1A7A4A">{top_pos_dest}</b> (koefisien {top_pos_val:.3f}), '
+            f'sedangkan indikasi persaingan destruktif paling besar terjadi di '
+            f'<b style="color:#C0392B">{top_neg_dest}</b> (koefisien {top_neg_val:.3f}).'
+            f'Berdasarkan temuan ini, investasi baru sebaiknya diprioritaskan pada destinasi '
+            f'dengan koefisien positif, karena penambahan akomodasi di lokasi tersebut cenderung '
+            f'memperkuat daya tarik kawasan secara keseluruhan, bukan justru memperketat persaingan.'
+            f'</div>'
+            f'</div>',
+            unsafe_allow_html=True
+        )
 
 # ════════════════════════════════════════════════════════════════════
 # PAGE 4 — ATTRACTION ECOSYSTEM
@@ -703,7 +716,7 @@ def page_ecosystem():
                 textfont=dict(color='#A6B4C8', size=10),
             ))
             fig = apply_layout(fig, height=280)
-            fig.update_xaxes(title='Avg Attractions in 5km')
+            fig.update_xaxes(title='Rata-rata jarak dalam 5km')
             fig.update_layout(showlegend=False) 
             st.plotly_chart(fig, width="stretch", config={'displayModeBar': False})
         #st.markdown('</div>', unsafe_allow_html=True)
@@ -735,7 +748,7 @@ def page_ecosystem():
                 hovertemplate='Dist: %{x:.2f}km<br>Demand: %{y:.1f}<extra></extra>',
             ))
             fig = apply_layout(fig, height=280)
-            fig.update_xaxes(title='Distance to Nearest Attraction (km)')
+            fig.update_xaxes(title='Jarak ke atraksi terdekat (km)')
             fig.update_yaxes(title='Demand Score')
             fig.update_layout(showlegend=False)
             valid = smp.dropna(subset=['jarak_ke_atraksi_terdekat_km','demand_score'])
@@ -774,7 +787,7 @@ def page_ecosystem():
             fig.add_vline(x=ma, line=dict(color='rgba(0,212,255,0.2)', dash='dot'))
             fig.add_hline(y=mn, line=dict(color='rgba(0,212,255,0.2)', dash='dot'))
             fig = apply_layout(fig, height=280)
-            fig.update_xaxes(title='Avg Attractions in 5km')
+            fig.update_xaxes(title='Rata-rata jarak dalam 5km')
             fig.update_yaxes(title='Number of Hotels')
             fig.update_layout(showlegend=False) 
             st.plotly_chart(fig, width="stretch", config={'displayModeBar': False})
@@ -783,10 +796,12 @@ def page_ecosystem():
     spacer(14)
     st.markdown(insight_html(
         "🌿 Ecosystem Intelligence Insight",
-        "Destinasi dengan kepadatan atraksi tinggi dan supply rendah = zona ROI tertinggi. "
-        "Hotel dalam radius 1km dari atraksi utama menunjukkan volume ulasan 40% lebih tinggi. "
-        "Koridor eko-wisata menghubungkan kluster atraksi ke akomodasi adalah driver utama "
-        "daya saing pariwisata jangka panjang.",
+        "Destinasi dengan jumlah atraksi yang tinggi namun jumlah akomodasi yang masih rendah "
+        "berpotensi menjadi lokasi dengan peluang investasi yang lebih baik. "
+        "Hotel yang berada dalam radius 1 km dari atraksi utama menunjukkan rata-rata jumlah ulasan "
+        "yang lebih tinggi dibandingkan hotel yang berjarak lebih jauh. "
+        "Kedekatan antara kluster atraksi dan akomodasi menjadi salah satu faktor penting "
+        "yang mempengaruhi daya saing pariwisata dalam jangka panjang.",
         'success'
     ), unsafe_allow_html=True)
 
@@ -1263,23 +1278,30 @@ def page_investment():
 
     spacer(20)
 
+    # ── Cegah destinasi yang sama muncul di top3 dan worst sekaligus ──
     best3 = dest_inv.nlargest(3, 'avg_opp')
+    worst_candidates = dest_inv[~dest_inv['destinasi'].isin(best3['destinasi'])]
+    worst = (
+        worst_candidates.nlargest(1, 'avg_competition').iloc[0]
+        if not worst_candidates.empty
+        else dest_inv.nlargest(1, 'avg_competition').iloc[0]
+    )
     best_names = ', '.join(best3['destinasi'].tolist())
-    worst = dest_inv.nlargest(1, 'avg_competition').iloc[0]
 
     st.markdown(insight_html(
         "Rekomendasi Wilayah Final",
-        f"<strong style='color:#22C55E'>Top 3 DSP untuk investasi sekarang: {best_names}</strong> "
-        f"berdasarkan kombinasi opportunity score, demand tervalidasi, dan ekosistem atraksi. "
-        f"<br><br>"
-        f"Hindari entry mid-range di <strong style='color:#EF4444'>{worst['destinasi']}</strong> "
-        f"(kompetisi {worst['avg_competition']:.0f}%) — pivot ke segmen ultra-premium atau exit. "
-        f"<br><br>"
-        f"Total <strong style='color:#00D4FF'>{total_sangat} lokasi Sangat Direkomendasikan</strong> "
-        f"tersebar di 10 DSP dengan {total_blue} zona Blue Ocean tersisa sebagai peluang first-mover.",
+        (
+            f"<b>Prioritas Utama:</b> <strong style='color:#22C55E'>{best_names}</strong>.<br>"
+            f"Ketiga destinasi ini memiliki keseimbangan paling baik antara skor peluang, tingkat permintaan wisatawan, dan kelengkapan fasilitas di sekitarnya.<br><br>"
+            
+            f"<b>Risiko Persaingan Tinggi:</b> <strong style='color:#EF4444'>{worst['destinasi']}</strong>.<br>"
+            f"Tingkat persaingan di wilayah ini sudah mencapai {worst['avg_competition']:.0f}%. Sangat tidak disarankan untuk membangun hotel kelas menengah biasa. Pilihan terbaik adalah membangun hotel mewah dengan konsep yang sangat unik, atau memindahkan rencana investasi ke destinasi lain.<br><br>"
+            
+            f"<b>Ringkasan Peluang Nasional:</b><br>"
+            f"Terdapat <strong style='color:#00D4FF'>{total_sangat} lokasi yang sangat direkomendasikan</strong> secara nasional. {total_blue} lokasi di antaranya masih tergolong sepi pesaing, sehingga sangat menguntungkan bagi investor yang memutuskan untuk membangun lebih awal."
+        ),
         'success'
     ), unsafe_allow_html=True)
-
 # ════════════════════════════════════════════════════════════════════
 # PAGE 7 — SPATIAL ECONOMETRICS
 # ════════════════════════════════════════════════════════════════════
@@ -1571,9 +1593,9 @@ def page_econometrics():
                         f'<div style="background:#FFFFFF;border:1px solid #E2E8F0;border-left:3px solid {find_clr};border-radius:0 8px 8px 0;padding:16px 14px;box-shadow:0 1px 3px rgba(15,42,74,0.03);">'
                         f'  <div style="font-size:11px;font-weight:800;color:#0F2A4A;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Artinya untuk Investor</div>'
                         f'  <div style="font-size:11px;color:#334155;line-height:1.65;margin-bottom:12px;text-align:justify;">{plain_clean}</div>'
-                        f'  <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:6px;padding:10px 12px;">'
-                        f'    <div style="font-size:9px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Catatan per Destinasi:</div>'
-                        f'    <div style="font-size:10px;color:#475569;line-height:1.6;">{dest_note_clean}</div>'
+                        #f'  <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:6px;padding:10px 12px;">'
+                        #f'    <div style="font-size:9px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Catatan per Destinasi:</div>'
+                        #f'    <div style="font-size:10px;color:#475569;line-height:1.6;">{dest_note_clean}</div>'
                         f'  </div>'
                         f'</div>'
                     )
@@ -1689,38 +1711,38 @@ def page_econometrics():
     n_spatial = int((r2_per_dest['model_dipakai'] != 'OLS (Global)').sum())
     n_ols     = int((r2_per_dest['model_dipakai'] == 'OLS (Global)').sum())
 
-    st.markdown(
-        f'<div style="background:#0F2A4A;border-radius:12px;padding:18px 22px;margin-top:16px;">'
-        f'<div style="font-size:14px;font-weight:700;color:#FFFFFF;margin-bottom:12px;">'
-        f'Ringkasan Temuan Spasial untuk Investor</div>'
-        f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
+    #st.markdown(
+    #    f'<div style="background:#0F2A4A;border-radius:12px;padding:18px 22px;margin-top:16px;">'
+    #    f'<div style="font-size:14px;font-weight:700;color:#FFFFFF;margin-bottom:12px;">'
+    #    f'Ringkasan Temuan Spasial untuk Investor</div>'
+    #    f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
 
-        f'<div style="background:rgba(255,255,255,0.07);border-radius:8px;padding:12px;">'
-        f'<div style="font-size:11px;font-weight:700;color:#22C55E;margin-bottom:6px;">'
-        f'Strategi Terbukti dari Data</div>'
-        f'<div style="font-size:11px;color:#CBD5E1;line-height:1.7;">'
-        f'· Masuk di kluster model spasial ({n_spatial} destinasi) — pola lokasi terbukti signifikan<br>'
-        f'· Posisi hotel &lt;2km dari atraksi utama (terutama Tanjung Kelayang)<br>'
-        f'· Manfaatkan efek aglomerasi di destinasi dengan koefisien kompetitor positif<br>'
-        f'· Di destinasi alam, keterpencilan bisa jadi nilai jual (Borobudur, Wakatobi)'
-        f'</div>'
-        f'</div>'
+    #    f'<div style="background:rgba(255,255,255,0.07);border-radius:8px;padding:12px;">'
+    #    f'<div style="font-size:11px;font-weight:700;color:#22C55E;margin-bottom:6px;">'
+    #    f'Strategi Terbukti dari Data</div>'
+    #    f'<div style="font-size:11px;color:#CBD5E1;line-height:1.7;">'
+    #    f'· Masuk di kluster model spasial ({n_spatial} destinasi) — pola lokasi terbukti signifikan<br>'
+    #    f'· Posisi hotel &lt;2km dari atraksi utama (terutama Tanjung Kelayang)<br>'
+    #    f'· Manfaatkan efek aglomerasi di destinasi dengan koefisien kompetitor positif<br>'
+    #    f'· Di destinasi alam, keterpencilan bisa jadi nilai jual (Borobudur, Wakatobi)'
+    #    f'</div>'
+    #    f'</div>'
 
-        f'<div style="background:rgba(255,255,255,0.07);border-radius:8px;padding:12px;">'
-        f'<div style="font-size:11px;font-weight:700;color:#EF4444;margin-bottom:6px;">'
-        f'Risiko yang Harus Dihindari</div>'
-        f'<div style="font-size:11px;color:#CBD5E1;line-height:1.7;">'
-        f'· Destinasi yang sudah jenuh — kompetitor baru justru merugikan<br>'
-        f'· Lokasi jauh dari atraksi utama di destinasi non-alam<br>'
-        f'· Morotai: atraksi ada tapi ekosistem belum terkoneksi — timing masih berisiko<br>'
-        f'· Model OLS ({n_ols} destinasi) = peluang first-mover, bukan zona bebas risiko'
-        f'</div>'
-        f'</div>'
+    #    f'<div style="background:rgba(255,255,255,0.07);border-radius:8px;padding:12px;">'
+    #    f'<div style="font-size:11px;font-weight:700;color:#EF4444;margin-bottom:6px;">'
+    #    f'Risiko yang Harus Dihindari</div>'
+    #    f'<div style="font-size:11px;color:#CBD5E1;line-height:1.7;">'
+    #    f'· Destinasi yang sudah jenuh — kompetitor baru justru merugikan<br>'
+    #    f'· Lokasi jauh dari atraksi utama di destinasi non-alam<br>'
+    #    f'· Morotai: atraksi ada tapi ekosistem belum terkoneksi — timing masih berisiko<br>'
+    #    f'· Model OLS ({n_ols} destinasi) = peluang first-mover, bukan zona bebas risiko'
+    #    f'</div>'
+    #    f'</div>'
 
-        f'</div>'
-        f'</div>',
-        unsafe_allow_html=True
-    )
+    #    f'</div>'
+    #    f'</div>',
+    #    unsafe_allow_html=True
+    #)
 
 
 # ════════════════════════════════════════════════════════════════════
@@ -1750,7 +1772,7 @@ def page_destination():
 
     all_type_f = ['All'] + sorted(df_raw['jenis'].dropna().unique().tolist()) if 'jenis' in df_raw.columns else ['All']
     with fc2:
-        st.markdown('<div style="font-size:11px;color:#74A98A;margin-bottom:3px;font-weight:600;">Jenis Hotel</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:11px;color:#74A98A;margin-bottom:3px;font-weight:600;">Jenis Akomodasi</div>', unsafe_allow_html=True)
         sel_type_d = st.selectbox("Jenis", all_type_f, key='dest_jenis', label_visibility='collapsed')
 
     all_seg_f = ['All'] + sorted(df_raw['market_segment'].dropna().unique().tolist()) if 'market_segment' in df_raw.columns else ['All']
@@ -1824,7 +1846,7 @@ def page_destination():
             unsafe_allow_html=True
         )
         kpi_items = [
-            ("Hotels",       f"{len(d_df):,}",                                    "#00D4FF"),
+            ("Akomodasi",       f"{len(d_df):,}",                                    "#00D4FF"),
             ("Avg Rating",   f"{d_df['rating'].mean():.1f}",                   "#F59E0B"),
             ("Competition",  f"{d_df['competition_score'].mean():.0f}%",          "#EF4444"),
             ("Demand Score", f"{d_df['demand_score'].mean():.0f}%",               "#22C55E"),
@@ -1905,7 +1927,7 @@ def page_destination():
                 st.plotly_chart(fig, width="stretch", config={'displayModeBar': False})
 
         with cb2:
-            section_header("Klasifikasi Kelas Bintang", "Hotel dengan rating bintang resmi")
+            section_header("Klasifikasi Kelas Bintang", "Akomodasi dengan rating bintang")
 
             if 'kasta_bintang' in d_df.columns:
                 import re
@@ -2016,7 +2038,7 @@ def page_destination():
             st.plotly_chart(hist_chart('demand_score', '#40916C', 'Skor Permintaan'),
                             width="stretch", config={'displayModeBar': False})
         with cf2:
-            section_header("Top 5 Hotel Ulasan Terbanyak", "Volume Ulasan Tertinggi di Destinasi Ini")
+            section_header("Top 5 Akomodasi Ulasan Terbanyak", "Volume Ulasan Tertinggi di Destinasi Ini")
             if 'jumlah_ulasan' in d_df.columns:
                 top5 = d_df.nlargest(5, 'jumlah_ulasan')
                 rank_colors = {
@@ -2157,13 +2179,20 @@ def page_strategy():
         "badge_bg": "rgba(45,106,79,0.12)",
         "items": [
             ("Land Banking Morotai & Likupang",
-             "Infrastruktur belum masuk, harga tanah masih murah. Begitu KEK aktif, harga akan naik cepat dan peluang ini hilang."),
+             "Kompetisi hotel di kedua destinasi ini sudah cukup tinggi, tapi harga tanahnya masih murah "
+             "karena infrastruktur belum sepenuhnya masuk. Begitu KEK aktif, harga akan naik cepat — "
+             "peluang ini soal timing tanah, bukan soal bersaing hotel yang sudah ada."),
             ("Akuisisi Resort Wakatobi",
-             "Tidak bisa bangun baru di sini karena regulasi konservasi. Kalau mau masuk Wakatobi, beli yang sudah ada."),
+             "Opportunity score-nya tertinggi secara nasional, tapi kompetisinya juga sudah menengah-tinggi "
+             "dan ada regulasi konservasi yang membatasi pembangunan baru. Kalau mau masuk Wakatobi, "
+             "jalan yang lebih realistis adalah membeli resort yang sudah berdiri."),
             ("Boutique Lodge Raja Ampat",
-             "Persaingan paling rendah dari semua destinasi. Cocok untuk properti kecil yang tidak butuh tamu banyak untuk balik modal."),
+             "Kompetisi paling rendah dari seluruh destinasi, sementara permintaan wisatawannya justru "
+             "paling tinggi. Kombinasi ini pas untuk properti kecil yang tidak butuh volume tamu besar "
+             "untuk balik modal."),
             ("Konversi Aset Danau Toba",
-             "Banyak hotel bintang 2–3 yang sepi bukan karena sepi tamu, tapi karena salah segmen. Ubah dulu, bangun nanti."),
+             "Permintaan wisatawannya cukup baik, tapi banyak hotel bintang 2–3 yang sepi bukan karena "
+             "sepi tamu, melainkan karena salah segmen. Ubah dulu konsepnya, baru pertimbangkan bangun baru."),
         ]
     },
     {
@@ -2175,14 +2204,19 @@ def page_strategy():
         "border":   "#1565C0",
         "badge_bg": "rgba(21,101,192,0.12)",
         "items": [
-            ("Resort Marine Heritage Morotai",
-             "Sepi saingan, tapi pasar belum matang hari ini. Mulai bangun sekarang agar siap beroperasi tepat saat konektivitasnya membaik."),
+            ("Resort Pantai Tanjung Kelayang",
+             "Kompetisinya masih di level menengah, belum sepadat destinasi utama seperti Labuan Bajo "
+             "atau Morotai. Cocok untuk investor yang mau masuk ke pasar yang belum terlalu ramai "
+             "tapi juga tidak harus menunggu terlalu lama seperti destinasi yang benar-benar baru berkembang."),
             ("Glamping Premium Bromo",
-             "Jutaan orang sudah datang ke Bromo setiap tahun, tapi tidak ada yang menawarkan pengalaman menginap yang benar-benar premium. Permintaannya ada, tawarannya belum."),
+             "Bromo sudah lama jadi tujuan wisata gunung yang ramai, tapi belum ada yang menawarkan "
+             "pengalaman menginap yang benar-benar premium. Permintaannya ada, tawarannya belum."),
             ("Lakefront Resort Danau Toba",
-             "Tol Trans-Sumatra akan selesai bertahap. Properti yang sudah berdiri saat akses terbuka akan langsung menikmati lonjakan tamu."),
+             "Tol Trans-Sumatra akan selesai bertahap. Properti yang sudah berdiri saat akses terbuka "
+             "akan langsung menikmati lonjakan tamu — ini taruhan pada infrastruktur yang sedang berjalan."),
             ("Kemitraan Event Mandalika",
-             "MotoGP dan event lainnya mengisi kalender 8–12 kali setahun. Daripada bersaing di pasar yang sudah penuh, lebih baik jadi mitra resmi event-nya."),
+             "MotoGP dan event lainnya mengisi kalender rutin sepanjang tahun. Daripada bersaing langsung "
+             "di pasar yang sudah cukup padat, lebih realistis jadi mitra resmi event-nya."),
         ]
     },
     {
@@ -2195,14 +2229,20 @@ def page_strategy():
         "badge_bg": "rgba(123,45,139,0.12)",
         "items": [
             ("Dive Circuit Raja Ampat – Wakatobi – Labuan Bajo",
-             "Wisatawan selam kelas dunia biasanya mengunjungi ketiganya secara terpisah. Belum ada satu operator pun yang menghubungkan ketiganya sebagai satu paket perjalanan."),
+             "Wisatawan selam kelas dunia biasanya mengunjungi ketiganya secara terpisah. Belum ada "
+             "satu operator pun yang menghubungkan ketiganya sebagai satu paket perjalanan."),
             ("Jaringan Resort Zona UNESCO",
-             "Borobudur, Wakatobi, dan Komodo punya nama besar tapi akomodasi premium-nya masih sangat sedikit. Sulit dimasuki kompetitor karena regulasinya ketat."),
+             "Borobudur, Wakatobi, dan Komodo punya nama besar tapi akomodasi premiumnya masih sangat "
+             "sedikit. Sulit dimasuki kompetitor karena regulasinya ketat."),
             ("Platform Data Investasi Pariwisata",
-             "Sampai sekarang tidak ada tempat yang bisa dipakai investor untuk melihat data kinerja, harga aset, dan peluang transaksi properti wisata Indonesia secara terpusat."),
+             "Sampai sekarang belum ada tempat yang bisa dipakai investor untuk melihat data kinerja, "
+             "harga aset, dan peluang transaksi properti wisata Indonesia secara terpusat."),
         ]
     },
 ]
+
+    max_items = max(len(r["items"]) for r in roadmap)
+    dynamic_min_height = 90 + (max_items * 120)  # 90px untuk header, ~130px per item
 
     for r in roadmap:
         with r["col"]:
@@ -2218,7 +2258,7 @@ def page_strategy():
             st.markdown(
                 f'<div style="background:{r["bg"]};border:1.5px solid {r["border"]};'
                 f'border-radius:12px;padding:16px;'
-                f'min-height:460px;box-sizing:border-box;">'   # ← min-height seragam
+                f'min-height:{dynamic_min_height}px;box-sizing:border-box;">'
                 f'  <div style="display:flex;justify-content:space-between;'
                 f'align-items:center;margin-bottom:14px;">'
                 f'    <div style="font-size:14px;font-weight:800;color:{r["color"]};">'
@@ -2257,19 +2297,18 @@ def page_engine():
 def page_insights():
     page_header_compact(
         "Dinamika Pasar",
-        "Temuan Kunci dari 3.082 Data Hotel · 10 Destinasi Super Prioritas",
+        f"Temuan Kunci dari {len(df):,} Data Hotel · {df['destinasi'].nunique()} Destinasi Super Prioritas",
         ""
     )
 
-    # ── Catatan metodologi ─────────────────────────────────────────
     st.markdown(
         '<div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;'
         'padding:12px 16px;margin-bottom:20px;font-size:11px;color:#92400E;line-height:1.7;">'
         '<b>Catatan cara membaca:</b> '
         'Demand score dihitung secara relatif di dalam masing-masing destinasi (skala 0–100 per DSP), '
         'bukan perbandingan volume absolut antar destinasi. '
-        'Artinya, demand score 80 di Raja Ampat tidak berarti permintaannya lebih tinggi dari '
-        'demand score 60 di Borobudur — keduanya hanya menunjukkan posisi relatif hotel tersebut '
+        'Artinya, demand score yang tinggi di satu destinasi tidak selalu berarti volume permintaannya '
+        'lebih besar dari destinasi lain — keduanya hanya menunjukkan posisi relatif hotel tersebut '
         'di dalam destinasinya sendiri. '
         'Untuk melihat volume permintaan aktual, gunakan data total ulasan per destinasi.'
         '</div>',
@@ -2281,94 +2320,93 @@ def page_insights():
         "Temuan langsung dari data — bukan asumsi"
     )
 
+    # ── Hitung ulang seluruh statistik dari data aktual ──────────
+    top_opp   = dest_stats.nlargest(1, 'avg_opportunity').iloc[0]
+    low_opp   = dest_stats.nsmallest(1, 'avg_opportunity').iloc[0]
+    top_comp  = dest_stats.nlargest(1, 'avg_competition').iloc[0]
+    low_comp  = dest_stats.nsmallest(1, 'avg_competition').iloc[0]
+    top_dem   = dest_stats.nlargest(1, 'avg_demand').iloc[0]
+    top_hotel_count = dest_stats.nlargest(1, 'n_hotels').iloc[0]
+
+    red_pct = (df['status_ocean'].str.contains('Red', na=False).mean() * 100) if 'status_ocean' in df.columns else 0
+    med_opp = dest_stats['avg_opportunity'].median()
+
     insights = [
         {
             'type': 'danger',
-            'tag':  'Pasar Sudah Sangat Padat di Hampir Semua Destinasi',
+            'tag':  'Sebagian Besar Destinasi Berada di Zona Kepadatan Tinggi',
             'text': (
-                '93% dari 3.082 hotel berada di zona kepadatan tinggi (Red Ocean) — bersaing langsung '
-                'dengan hotel lain dalam radius 2 km. Labuan Bajo paling padat: rata-rata satu hotel '
-                'dikelilingi 83 hotel lain dalam radius 1 km. Mandalika 58, Borobudur 50. '
-                'Status Red Ocean ini diukur dari kepadatan geografis, bukan dari tingkat '
-                'profitabilitas — artinya padat secara lokasi, belum tentu pasarnya jenuh sepenuhnya.'
+                f"Sebanyak {red_pct:.0f}% dari {len(df):,} akomodasi berada di zona kepadatan tinggi "
+                f"(Red Ocean) — bersaing langsung dengan hotel lain dalam radius yang berdekatan. "
+                f"Status ini diukur dari kepadatan geografis, bukan dari tingkat profitabilitas — "
+                f"artinya padat secara lokasi belum tentu berarti pasarnya sudah jenuh sepenuhnya."
             ),
         },
         {
             'type': 'success',
-            'tag':  'Raja Ampat: Persaingan Paling Rendah, Distribusi Permintaan Paling Merata',
+            'tag':  f"{top_dem['dest_display']}: Tingkat Permintaan Wisatawan Tertinggi",
             'text': (
-                'Raja Ampat mencatat competition score terendah (3.0) — rata-rata hanya 5 hotel '
-                'bersaing dalam radius 1 km. Distribusi permintaan di dalam destinasi ini juga '
-                'paling merata dibanding destinasi lain (demand score rata-rata 43.1). '
-                'Perlu dicatat: volume ulasan absolutnya masih kecil (6.017 total) dibanding '
-                'Borobudur (81.086) atau Bromo (80.112) — ini destinasi yang masih berkembang, '
-                'bukan yang sudah ramai. Peluang first-mover ada, tapi pasar belum matang sepenuhnya.'
+                f"{top_dem['dest_display']} mencatat demand score rata-rata tertinggi secara nasional "
+                f"({top_dem['avg_demand']:.1f}), sekaligus memiliki tingkat persaingan yang relatif "
+                f"rendah ({top_dem['avg_competition']:.1f}%). Kombinasi ini menunjukkan bahwa minat "
+                f"wisatawan terhadap destinasi ini belum diikuti oleh jumlah akomodasi yang sebanding, "
+                f"sehingga masih terbuka ruang bagi investor baru."
             ),
         },
         {
             'type': 'warning',
-            'tag':  'Labuan Bajo: Opportunity Score Tertinggi tapi Risiko Persaingan Paling Berat',
+            'tag':  f"{top_opp['dest_display']}: Peluang Investasi Tertinggi, Perlu Dicermati Konteksnya",
             'text': (
-                'Labuan Bajo memimpin dengan opportunity score rata-rata 53.7 — tertinggi dari semua '
-                'destinasi. Namun 100% hotelnya masuk zona kepadatan tinggi dengan rata-rata 83 saingan '
-                'per km. Opportunity score yang tinggi ini mencerminkan kombinasi ekosistem atraksi '
-                'yang kuat dan aksesibilitas baik — bukan berarti mudah masuk. '
-                'Investor baru di segmen mid-range akan langsung bersaing keras dari hari pertama.'
+                f"{top_opp['dest_display']} memimpin dengan opportunity score rata-rata "
+                f"{top_opp['avg_opportunity']:.1f} — tertinggi dari seluruh destinasi. Skor tinggi ini "
+                f"mencerminkan kombinasi ekosistem atraksi yang kuat dan tingkat permintaan yang "
+                f"memadai, bukan berarti destinasi ini otomatis mudah dimasuki. Tingkat persaingannya "
+                f"tercatat {top_opp['avg_competition']:.1f}%, sehingga investor baru tetap perlu "
+                f"mempertimbangkan strategi diferensiasi yang jelas."
             ),
         },
         {
             'type': 'info',
-            'tag':  'Mandalika: Terbanyak Hotel, tapi Bukan Pilihan Utama untuk Investasi Baru',
+            'tag':  f"{top_hotel_count['dest_display']}: Jumlah Hotel Terbanyak, Bukan Berarti Peluang Terbesar",
             'text': (
-                'Dengan 789 hotel — hampir seperempat dari total data nasional — Mandalika adalah '
-                'destinasi dengan supply paling besar. Opportunity score rata-ratanya 38.0, berada '
-                'di bawah Labuan Bajo, Borobudur, Morotai, Raja Ampat, dan Wakatobi. '
-                '96% hotelnya berada di zona kepadatan tinggi. Bukan tidak ada peluang, '
-                'tapi ruangnya sudah jauh lebih sempit dibanding destinasi lain.'
-            ),
-        },
-        {
-            'type': 'success',
-            'tag':  'Borobudur: Kombinasi Terbaik antara Peluang, Volume Pasar, dan Persaingan',
-            'text': (
-                'Borobudur mencatat opportunity score 48.8 dengan competition score 29.2 dan '
-                'total ulasan tertinggi dari semua destinasi (81.086) — bukti bahwa pasar di sini '
-                'sudah terbentuk dengan baik. Persaingannya lebih terukur dibanding Labuan Bajo. '
-                'Untuk investor yang ingin masuk ke pasar yang sudah terbukti dengan ruang kompetisi '
-                'yang masih lebih sehat, Borobudur adalah pilihan paling solid secara data.'
-            ),
-        },
-        {
-            'type': 'success',
-            'tag':  'Morotai: Persaingan Rendah dengan Opportunity Score di Atas Rata-rata',
-            'text': (
-                'Morotai mencatat opportunity score 44.1 dengan competition score hanya 6.3 — '
-                'salah satu yang paling rendah. Tapi volume pasarnya masih sangat kecil: '
-                'total ulasan hanya 1.209, terendah ketiga. Ini destinasi untuk investor '
-                'dengan horizon jangka panjang yang siap masuk sebelum infrastruktur dan '
-                'ekosistem wisatanya benar-benar matang.'
-            ),
-        },
-        {
-            'type': 'warning',
-            'tag':  'Zona Sepi Saingan Tidak Otomatis Berarti Peluang Lebih Besar',
-            'text': (
-                '212 hotel (7% dari total) berada di zona geografis yang relatif terisolasi dari '
-                'kluster hotel lain. Terbanyak ada di Bromo Tengger Semeru (41 hotel), Mandalika (34), '
-                'dan Borobudur (33). Namun rata-rata opportunity score zona ini (28.8) justru lebih '
-                'rendah dari zona yang padat (42.1) — lokasi yang sepi hotel kadang memang karena '
-                'posisinya kurang strategis, bukan karena pasarnya belum digarap.'
+                f"{top_hotel_count['dest_display']} tercatat sebagai destinasi dengan jumlah hotel "
+                f"terbanyak ({int(top_hotel_count['n_hotels']):,} hotel dari total {len(df):,} data nasional). "
+                f"Namun, opportunity score rata-ratanya ({top_hotel_count['avg_opportunity']:.1f}) "
+                f"tidak menempati posisi tertinggi dibanding destinasi lain. Hal ini mengindikasikan "
+                f"bahwa ruang bagi investor baru di destinasi ini sudah jauh lebih terbatas dibanding "
+                f"destinasi dengan supply yang lebih sedikit."
             ),
         },
         {
             'type': 'danger',
-            'tag':  'Manado Belum Menunjukkan Sinyal Pasar yang Cukup untuk Investasi Baru',
+            'tag':  f"{top_comp['dest_display']}: Tingkat Persaingan Tertinggi Secara Nasional",
             'text': (
-                'Manado (Likupang Hub) mencatat opportunity score rata-rata 12.8 — terendah dari '
-                'semua destinasi. Total ulasan hanya 10.635 dengan median 2 ulasan per hotel, '
-                'menunjukkan tingkat kunjungan yang masih sangat rendah di level properti individual. '
-                '83% hotelnya berada di zona kepadatan tinggi meski jumlah hotelnya hanya 89. '
-                'Data belum mendukung rekomendasi investasi akomodasi baru di wilayah ini saat ini.'
+                f"{top_comp['dest_display']} mencatat competition score rata-rata tertinggi "
+                f"({top_comp['avg_competition']:.1f}%), dengan opportunity score {top_comp['avg_opportunity']:.1f}. "
+                f"Investor yang ingin masuk ke segmen menengah di destinasi ini kemungkinan besar "
+                f"akan langsung bersaing ketat sejak awal, sehingga diperlukan diferensiasi produk "
+                f"yang kuat agar tidak sekadar menambah kepadatan pasar yang sudah tinggi."
+            ),
+        },
+        {
+            'type': 'success',
+            'tag':  f"{low_comp['dest_display']}: Persaingan Paling Rendah Secara Nasional",
+            'text': (
+                f"{low_comp['dest_display']} mencatat competition score rata-rata terendah "
+                f"({low_comp['avg_competition']:.1f}%), dengan opportunity score {low_comp['avg_opportunity']:.1f} "
+                f"dan demand score {low_comp['avg_demand']:.1f}. Destinasi ini berpotensi menjadi lokasi "
+                f"yang tepat bagi investor yang ingin memasuki pasar lebih awal, sebelum tingkat "
+                f"persaingannya meningkat."
+            ),
+        },
+        {
+            'type': 'warning',
+            'tag':  f"{low_opp['dest_display']}: Belum Menunjukkan Sinyal Pasar yang Cukup untuk Investasi Baru",
+            'text': (
+                f"{low_opp['dest_display']} mencatat opportunity score rata-rata terendah dari seluruh "
+                f"destinasi ({low_opp['avg_opportunity']:.1f}). Kondisi ini mengindikasikan bahwa "
+                f"data belum mendukung rekomendasi investasi akomodasi baru di destinasi tersebut "
+                f"pada saat ini, sehingga perlu dipertimbangkan kembali sebelum melakukan ekspansi."
             ),
         },
     ]
@@ -2400,63 +2438,75 @@ def page_insights():
 
     section_header(
         "Rekomendasi Berdasarkan Data",
-        "5 langkah konkret yang didukung temuan dari 3.082 hotel"
+        f"Langkah konkret yang didukung temuan dari {len(df):,} hotel"
     )
 
+    # ── Susun rekomendasi otomatis berdasarkan kombinasi skor ────
+    # ── Susun rekomendasi otomatis berdasarkan kombinasi skor ────
+    dest_sorted_opp = dest_stats.sort_values('avg_opportunity', ascending=False).reset_index(drop=True)
+    best_stable = dest_sorted_opp[dest_sorted_opp['avg_competition'] <= dest_stats['avg_competition'].median()]
+    best_stable_dest = best_stable.iloc[0] if not best_stable.empty else dest_sorted_opp.iloc[0]
+
+    worst_dest_candidates = dest_stats[~dest_stats['dest_display'].isin([best_stable_dest['dest_display']])]
+    worst_dest = worst_dest_candidates.nlargest(1, 'avg_competition').iloc[0]# ── Susun rekomendasi otomatis berdasarkan kombinasi skor ────
+    dest_sorted_opp = dest_stats.sort_values('avg_opportunity', ascending=False).reset_index(drop=True)
+    best_stable = dest_sorted_opp[dest_sorted_opp['avg_competition'] <= dest_stats['avg_competition'].median()]
+    best_stable_dest = best_stable.iloc[0] if not best_stable.empty else dest_sorted_opp.iloc[0]
+
+    worst_dest_candidates = dest_stats[~dest_stats['dest_display'].isin([best_stable_dest['dest_display']])]
+    worst_dest = worst_dest_candidates.nlargest(1, 'avg_competition').iloc[0]
     recs = [
         {
             'number': 1,
-            'title':  'Borobudur untuk Investor yang Butuh Kepastian Pasar',
+            'title':  f"{best_stable_dest['dest_display']} untuk Investor yang Butuh Kepastian Pasar",
             'text':   (
-                'Dari semua destinasi, Borobudur punya kombinasi paling seimbang: opportunity score '
-                'tinggi (48.8), volume ulasan terbesar (81.086 — bukti pasar sudah terbentuk), '
-                'dan persaingan lebih terukur dari Labuan Bajo. Cocok untuk konsep boutique heritage '
-                'atau akomodasi berbasis wisata budaya yang memanfaatkan ekosistem atraksi yang sudah matang.'
+                f"Memiliki kombinasi paling seimbang antara opportunity score "
+                f"({best_stable_dest['avg_opportunity']:.1f}) dan tingkat persaingan yang masih "
+                f"terkendali ({best_stable_dest['avg_competition']:.1f}%). Cocok bagi investor yang "
+                f"ingin masuk ke pasar dengan risiko yang lebih terukur dibanding destinasi lain "
+                f"yang persaingannya sudah sangat tinggi."
             ),
         },
         {
             'number': 2,
-            'title':  'Raja Ampat untuk Investor Jangka Panjang di Segmen Eco-Premium',
+            'title':  f"{top_dem['dest_display']} untuk Investor yang Ingin Menangkap Permintaan Tertinggi",
             'text':   (
-                'Persaingan paling rendah (competition score 3.0) dengan distribusi permintaan '
-                'paling merata di dalam destinasi. Tapi volume pasarnya masih kecil (6.017 ulasan total) '
-                '— ini bukan destinasi yang langsung ramai. Masuk sekarang berarti menjadi pemain awal '
-                'sebelum infrastruktur matang. Paling cocok untuk eco-resort atau dive lodge '
-                'yang tidak butuh volume tamu tinggi untuk profitable.'
+                f"Mencatat demand score tertinggi secara nasional ({top_dem['avg_demand']:.1f}) "
+                f"dengan tingkat persaingan yang relatif rendah ({top_dem['avg_competition']:.1f}%). "
+                f"Cocok untuk konsep akomodasi yang menyasar segmen wisatawan dengan minat tinggi "
+                f"namun belum terlayani sepenuhnya oleh suplai yang ada."
             ),
         },
         {
             'number': 3,
-            'title':  'Labuan Bajo Hanya untuk Segmen Premium dengan Diferensiasi Kuat',
+            'title':  f"{top_opp['dest_display']} Hanya untuk Segmen dengan Diferensiasi Kuat",
             'text':   (
-                'Opportunity score tertinggi (53.7) mencerminkan ekosistem wisata yang sudah sangat '
-                'kuat, tapi 100% pasarnya sudah padat secara geografis dengan 83 saingan per km. '
-                'Masuk di segmen mid-range hampir pasti berujung perang harga. '
-                'Kalau masuk, diferensiasi harus tidak bisa ditiru: lokasi eksklusif, '
-                'akses langsung ke Komodo, atau fasilitas yang benar-benar unik.'
+                f"Opportunity score tertinggi ({top_opp['avg_opportunity']:.1f}) mencerminkan "
+                f"ekosistem wisata yang sudah kuat, namun tingkat persaingannya juga tergolong "
+                f"tinggi ({top_opp['avg_competition']:.1f}%). Investor yang ingin masuk sebaiknya "
+                f"tidak membangun akomodasi kelas menengah yang serupa dengan yang sudah ada, "
+                f"melainkan menawarkan sesuatu yang tidak mudah ditiru oleh kompetitor."
             ),
         },
         {
             'number': 4,
-            'title':  'Morotai untuk Early-Mover yang Siap Menunggu',
+            'title':  f"{low_comp['dest_display']} untuk Investor dengan Horizon Jangka Panjang",
             'text':   (
-                'Persaingan sangat rendah (competition score 6.3) dengan opportunity score 44.1. '
-                'Tapi ini destinasi yang pasarnya belum matang — total ulasan hanya 1.209. '
-                'Cocok untuk investor dengan horizon 5–10 tahun yang ingin masuk sebelum '
-                'ekosistem wisata dan infrastrukturnya berkembang penuh. Risiko lebih tinggi, '
-                'tapi potensi first-mover advantage juga lebih besar.'
+                f"Tingkat persaingannya paling rendah secara nasional ({low_comp['avg_competition']:.1f}%), "
+                f"namun perlu dicatat bahwa pasar di destinasi ini kemungkinan belum sepenuhnya matang. "
+                f"Cocok bagi investor yang siap menunggu pertumbuhan destinasi ini secara bertahap, "
+                f"dengan potensi menjadi pemain awal sebelum persaingan meningkat."
             ),
         },
         {
             'number': 5,
-            'title':  'Tunda Investasi Baru di Mandalika dan Manado',
+            'title':  f"Pertimbangkan Ulang Investasi Baru di {worst_dest['dest_display']} dan {low_opp['dest_display']}",
             'text':   (
-                'Mandalika sudah sangat padat — 789 hotel dengan 96% di zona kepadatan tinggi '
-                'dan opportunity score yang relatif rendah (38.0). '
-                'Manado bahkan lebih jelas: opportunity score 12.8, terendah dari semua destinasi, '
-                'dengan volume kunjungan per hotel yang masih sangat kecil. '
-                'Kalau sudah punya aset di dua wilayah ini, fokus pada optimasi dan diferensiasi — '
-                'bukan menambah unit baru.'
+                f"{worst_dest['dest_display']} mencatat tingkat persaingan yang sangat tinggi "
+                f"({worst_dest['avg_competition']:.1f}%), sementara {low_opp['dest_display']} "
+                f"mencatat opportunity score terendah secara nasional ({low_opp['avg_opportunity']:.1f}). "
+                f"Bagi investor yang sudah memiliki aset di kedua wilayah ini, disarankan untuk "
+                f"fokus pada optimasi dan diferensiasi produk yang ada, bukan menambah unit baru."
             ),
         },
     ]
